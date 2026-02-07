@@ -81,6 +81,9 @@ async function getProjectById(req, res) {
     if (!id) {
         throw new errors_1.ValidationError('Project ID is required');
     }
+    if (!id || id === 'undefined') {
+        throw new errors_1.ValidationError('Valid Project ID is required');
+    }
     const result = await projectService.getProjectById(id, userId);
     res.status(200).json(result);
 }

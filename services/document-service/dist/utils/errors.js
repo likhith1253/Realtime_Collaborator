@@ -5,7 +5,7 @@
  * Following API contract error response format
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SlugExistsError = exports.CanvasNotFoundError = exports.DocumentNotFoundError = exports.ProjectNotFoundError = exports.OrganizationNotFoundError = exports.InsufficientScopeError = exports.InvalidTokenError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.ValidationError = exports.AppError = void 0;
+exports.UserNotFoundError = exports.SlugExistsError = exports.CanvasNotFoundError = exports.DocumentNotFoundError = exports.ProjectNotFoundError = exports.OrganizationNotFoundError = exports.InsufficientScopeError = exports.InvalidTokenError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.ValidationError = exports.AppError = void 0;
 class AppError extends Error {
     constructor(message, statusCode, code) {
         super(message);
@@ -95,3 +95,9 @@ class SlugExistsError extends ConflictError {
     }
 }
 exports.SlugExistsError = SlugExistsError;
+class UserNotFoundError extends NotFoundError {
+    constructor(message = 'User not found') {
+        super(message, 'USER_NOT_FOUND');
+    }
+}
+exports.UserNotFoundError = UserNotFoundError;

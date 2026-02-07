@@ -67,6 +67,7 @@ model User {
   access_logs       AccessLog[]
   memberships       OrganizationMember[]
   team_memberships  TeamMember[]
+  messages_sent     Message[]         @relation("MessageSender")
 
   // Indexes
   @@index([organization_id])
@@ -112,6 +113,7 @@ model Project {
   canvas       Canvas[]
   team_members TeamMember[]
   invitations  Invitation[]
+  messages     Message[]
 
   // Indexes
   @@index([organization_id])
@@ -303,4 +305,26 @@ model Invitation {
   @@index([project_id])
   @@index([token])
   @@map("invitations")
+}
+
+// ============================================================================
+// TABLE: messages
+// Owner: Document Service
+// Description: Chat messages within a project.
+// ============================================================================
+model Message {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  sender_id  String   @db.Uuid
+  content    String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+  sender  User    @relation("MessageSender", fields: [sender_id], references: [id])
+
+  // Indexes
+  @@index([project_id])
+  @@index([created_at])
+  @@map("messages")
 }

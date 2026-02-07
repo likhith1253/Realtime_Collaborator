@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ApiClient } from '@/lib/api-client'
 import { joinOrganization, onUserOnline, onUserOffline, onJoinedOrganization } from '@/lib/socket'
+import { HelpModal } from '@/components/help-modal'
 
 export function Sidebar() {
   const router = useRouter()
@@ -33,6 +34,7 @@ export function Sidebar() {
   const [members, setMembers] = React.useState<any[]>([])
   const [onlineUsers, setOnlineUsers] = React.useState<Set<string>>(new Set())
   const [docCount, setDocCount] = React.useState<number | null>(null)
+  const [showHelpModal, setShowHelpModal] = React.useState(false)
 
   React.useEffect(() => {
     if (user?.organization?.name) {
@@ -307,13 +309,13 @@ export function Sidebar() {
         </Link>
         <Button
           variant="ghost"
-          className="w-full justify-start text-sidebar-foreground/50 cursor-not-allowed"
-          disabled
-          title="Help documentation coming soon"
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+          onClick={() => setShowHelpModal(true)}
         >
           <HelpCircle className="w-4 h-4 mr-2" />
           Help
         </Button>
+        <HelpModal open={showHelpModal} onOpenChange={setShowHelpModal} />
         <Button
           variant="ghost"
           className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"

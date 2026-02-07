@@ -22,6 +22,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, fullName: string, organizationName: string, inviteToken?: string) => Promise<void>
   logout: () => void
+  updateUser: (updates: Partial<User>) => void
+  refreshUser: () => Promise<void>
   isAuthenticated: boolean
 }
 
@@ -248,6 +250,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Update local user state (optimistic update)
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...updates })
+    }
+  }
+
+  // Refresh user data from server
+  const refreshUser = async () => {
+    const storedToken = sessionStorage.getItem('auth_token')
+    if (!storedToken) return
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiBase}/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${storedToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(mapUserResponse(userData))
+      }
+    } catch (err) {
+      console.error('[Auth] Refresh user failed:', err)
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
@@ -256,6 +289,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
+    updateUser,
+    refreshUser,
     isAuthenticated: !!user,
   }
 

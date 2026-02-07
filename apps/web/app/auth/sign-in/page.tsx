@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -13,12 +13,50 @@ import { useAuth } from '@/lib/auth-context'
 
 export default function SignInPage() {
   const router = useRouter()
-  const { login, loading: authLoading } = useAuth()
+  const { login, loading: authLoading, isAuthenticated } = useAuth()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'kevin@gmail.com' : '')
+  const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'Kevin1234' : '')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loginAttempted, setLoginAttempted] = useState(false)
+
+  // Dev-only auto-login
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && !isAuthenticated && !loading && !loginAttempted) {
+      // Small delay to ensure hydration
+      const timer = setTimeout(() => {
+        const autoLogin = async () => {
+          setLoading(true)
+          try {
+            await login('kevin@gmail.com', 'Kevin1234')
+            setLoginAttempted(true)
+          } catch (e) {
+            console.error('Auto-login failed', e)
+            setLoading(false)
+          }
+        }
+        autoLogin()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+
+  // Navigate to dashboard once authenticated after login attempt
+  useEffect(() => {
+    if (loginAttempted && isAuthenticated && !authLoading) {
+      console.log('[SignIn] Auth confirmed, navigating to dashboard')
+      router.replace('/dashboard')
+    }
+  }, [loginAttempted, isAuthenticated, authLoading, router])
+
+  // Also redirect if already authenticated on mount
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      router.replace('/dashboard')
+    }
+  }, [isAuthenticated, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,16 +70,17 @@ export default function SignInPage() {
     setLoading(true)
     try {
       await login(email, password)
-      // Redirect to dashboard on success
-      router.push('/dashboard')
+      // Mark that login was attempted so useEffect can handle navigation
+      // once React state updates are committed
+      setLoginAttempted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
-    } finally {
       setLoading(false)
     }
   }
 
   const isLoading = loading || authLoading
+
 
   return (
     <motion.div

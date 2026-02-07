@@ -25,9 +25,9 @@ export function AppShell({ children }: AppShellProps) {
       </motion.div>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Topbar */}
-        <div className="border-b border-border bg-background sticky top-0 z-40">
+        <div className="border-b border-border bg-background sticky top-0 z-50 overflow-visible">
           <Topbar />
         </div>
 

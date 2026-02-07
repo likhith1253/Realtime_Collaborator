@@ -3,6 +3,7 @@ import Navigation from '@/components/navigation'
 import HeroSection from '@/components/hero-section'
 import FeaturesSection from '@/components/features-section'
 import CollaborationSection from '@/components/collaboration-section'
+import DocsSection from '@/components/docs-section'
 import Footer from '@/components/footer'
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
         <HeroSection />
         <FeaturesSection />
         <CollaborationSection />
+        <DocsSection />
       </main>
       <Footer />
     </div>

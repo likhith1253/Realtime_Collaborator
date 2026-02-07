@@ -9,6 +9,7 @@ import { auth } from '../middleware/auth.middleware';
 import * as projectController from '../controllers/project.controller';
 import * as documentController from '../controllers/document.controller';
 import * as teamController from '../controllers/team.controller';
+import * as messageController from '../controllers/message.controller';
 
 const router = Router();
 
@@ -76,4 +77,23 @@ router.delete(
     asyncHandler(teamController.removeTeamMember)
 );
 
+// ============================================================================
+// Message Routes (Chat)
+// ============================================================================
+
+// GET /projects/:projectId/messages - List messages (requires project:read scope)
+router.get(
+    '/:projectId/messages',
+    auth('project:read'),
+    asyncHandler(messageController.getProjectMessages)
+);
+
+// POST /projects/:projectId/messages - Create message (requires project:write scope)
+router.post(
+    '/:projectId/messages',
+    auth('project:write'),
+    asyncHandler(messageController.createMessage)
+);
+
 export default router;
+

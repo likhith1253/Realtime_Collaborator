@@ -217,3 +217,64 @@ export function onJoinedOrganization(callback: (data: { onlineUsers: OnlineUser[
         s.off('joined-organization', callback);
     };
 }
+
+/**
+ * Join a project chat room.
+ */
+export function joinChat(projectId: string): void {
+    const s = getSocket();
+    if (s) {
+        s.emit('join-chat', { projectId });
+    }
+}
+
+/**
+ * Leave a project chat room.
+ */
+export function leaveChat(projectId: string): void {
+    const s = getSocket();
+    if (s) {
+        s.emit('leave-chat', { projectId });
+    }
+}
+
+/**
+ * Send a chat message to a project room.
+ */
+export function sendChatMessage(projectId: string, message: { id: string; content: string; timestamp: string }): void {
+    const s = getSocket();
+    if (s) {
+        s.emit('chat:send', { projectId, message });
+    }
+}
+
+/**
+ * Listen for new chat messages.
+ */
+export function onChatMessage(
+    callback: (data: { id: string; sender: { id: string; name: string; avatar: string | null }; content: string; timestamp: string }) => void
+): () => void {
+    const s = getSocket();
+    if (!s) return () => { };
+
+    s.on('message:new', callback);
+    return () => {
+        s.off('message:new', callback);
+    };
+}
+
+/**
+ * Listen for when the client has successfully joined the chat.
+ */
+export function onJoinedChat(
+    callback: (data: { projectId: string; roomName: string }) => void
+): () => void {
+    const s = getSocket();
+    if (!s) return () => { };
+
+    s.on('joined-chat', callback);
+    return () => {
+        s.off('joined-chat', callback);
+    };
+}
+

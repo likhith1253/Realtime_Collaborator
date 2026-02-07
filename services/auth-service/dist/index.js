@@ -12,8 +12,10 @@ const logger_1 = require("@packages/logger");
 const health_1 = require("./health");
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
+const database_1 = require("@collab/database");
 const logger = (0, logger_1.createLogger)('auth-service');
 const app = (0, express_1.default)();
+const prisma = (0, database_1.getPrismaClient)();
 // Security middleware - temporarily disabled for debugging
 // app.use(helmet());
 app.use((0, cors_1.default)({
@@ -51,6 +53,9 @@ app.use(BASE_PATH, auth_routes_1.default);
 app.use(error_middleware_1.errorHandler);
 const startServer = async () => {
     try {
+        logger.info('Connecting to database...');
+        await prisma.$connect();
+        logger.info('Database connection established.');
         app.listen(config_1.config.port, () => {
             logger.info(`Auth Service running on port ${config_1.config.port}`);
             logger.info(`Environment: ${config_1.config.nodeEnv}`);
@@ -75,6 +80,7 @@ const startServer = async () => {
 // Graceful shutdown handler
 const shutdown = async () => {
     logger.info('Shutting down gracefully...');
+    await (0, database_1.disconnectPrisma)();
     process.exit(0);
 };
 process.on('SIGTERM', shutdown);

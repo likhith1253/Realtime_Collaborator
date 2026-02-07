@@ -19,14 +19,15 @@ function onRefreshed(token: string) {
 }
 
 async function refreshToken(): Promise<string | null> {
-  const refreshToken = sessionStorage.getItem('refresh_token')
-  if (!refreshToken) return null
+  const storedRefreshToken = sessionStorage.getItem('refresh_token')
+  if (!storedRefreshToken) return null
 
   try {
-    const response = await fetch('/auth/refresh', {
+    // Use absolute URL to API gateway, not relative path
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: refreshToken }),
+      body: JSON.stringify({ token: storedRefreshToken }),
     })
 
     if (!response.ok) return null
@@ -114,15 +115,10 @@ export class ApiClient {
           }
         }
 
-        // If refresh failed or retry still failed, redirect to login
-        console.log('[API] Authentication failed - redirecting to login')
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('auth_token')
-          sessionStorage.removeItem('refresh_token')
-          if (!window.location.pathname.includes('/auth')) {
-            window.location.href = '/auth/sign-in'
-          }
-        }
+        // If refresh failed or retry still failed, just throw error
+        // Don't clear session or redirect - let the ProtectedRoute handle it
+        // This prevents race conditions during initial page load
+        console.log('[API] Authentication failed for request:', endpoint)
         throw new Error('Authentication failed')
       }
 

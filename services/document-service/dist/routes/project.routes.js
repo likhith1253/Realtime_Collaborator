@@ -42,6 +42,8 @@ const error_middleware_1 = require("../middleware/error.middleware");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const projectController = __importStar(require("../controllers/project.controller"));
 const documentController = __importStar(require("../controllers/document.controller"));
+const teamController = __importStar(require("../controllers/team.controller"));
+const messageController = __importStar(require("../controllers/message.controller"));
 const router = (0, express_1.Router)();
 // POST /projects - Create project (requires project:write scope)
 router.post('/', (0, auth_middleware_1.auth)('project:write'), (0, error_middleware_1.asyncHandler)(projectController.createProject));
@@ -55,4 +57,19 @@ router.delete('/:id', (0, auth_middleware_1.auth)('project:delete'), (0, error_m
 router.post('/:projectId/documents', (0, auth_middleware_1.auth)('doc:write'), (0, error_middleware_1.asyncHandler)(documentController.createProjectDocument));
 // GET /projects/:projectId/documents - List documents in project
 router.get('/:projectId/documents', (0, auth_middleware_1.auth)('doc:read'), (0, error_middleware_1.asyncHandler)(documentController.listProjectDocuments));
+// POST /projects/:projectId/team - Add team member (requires project:write scope)
+router.post('/:projectId/team', (0, auth_middleware_1.auth)('project:write'), (0, error_middleware_1.asyncHandler)(teamController.addTeamMember));
+// GET /projects/:projectId/team - List team members (requires project:read scope)
+router.get('/:projectId/team', (0, auth_middleware_1.auth)('project:read'), (0, error_middleware_1.asyncHandler)(teamController.getProjectTeam));
+// DELETE /projects/:projectId/team/:userId - Remove team member (requires project:write scope)
+// Note: 'project:delete' might be too strong, usually 'project:write' covers membership management,
+// but owner check is enforced in service.
+router.delete('/:projectId/team/:userId', (0, auth_middleware_1.auth)('project:write'), (0, error_middleware_1.asyncHandler)(teamController.removeTeamMember));
+// ============================================================================
+// Message Routes (Chat)
+// ============================================================================
+// GET /projects/:projectId/messages - List messages (requires project:read scope)
+router.get('/:projectId/messages', (0, auth_middleware_1.auth)('project:read'), (0, error_middleware_1.asyncHandler)(messageController.getProjectMessages));
+// POST /projects/:projectId/messages - Create message (requires project:write scope)
+router.post('/:projectId/messages', (0, auth_middleware_1.auth)('project:write'), (0, error_middleware_1.asyncHandler)(messageController.createMessage));
 exports.default = router;

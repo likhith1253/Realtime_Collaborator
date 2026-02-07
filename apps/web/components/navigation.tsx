@@ -10,11 +10,12 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { label: 'Features', href: '#features' },
-    { label: 'Collaboration', href: '#collaboration' },
+    { label: 'Features', href: '/#features' },
+    { label: 'Collaboration', href: '/#collaboration' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Docs', href: '#features' },
+    { label: 'Docs', href: '/#docs' },
   ]
+
 
   return (
     <motion.nav

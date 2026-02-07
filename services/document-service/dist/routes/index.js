@@ -14,6 +14,7 @@ const document_routes_1 = __importDefault(require("./document.routes"));
 const slide_routes_1 = __importDefault(require("./slide.routes"));
 const presentation_routes_1 = __importDefault(require("./presentation.routes"));
 const canvas_routes_1 = __importDefault(require("./canvas.routes"));
+const invite_routes_1 = __importDefault(require("./invite.routes"));
 const router = (0, express_1.Router)();
 // Mount sub-routers
 router.use('/', presentation_routes_1.default);
@@ -21,5 +22,7 @@ router.use('/', slide_routes_1.default); // Mount slide routes first to handle s
 router.use('/', canvas_routes_1.default); // Mount canvas routes
 router.use('/organizations', organization_routes_1.default);
 router.use('/projects', project_routes_1.default);
+router.use('/projects', invite_routes_1.default); // Mount invite under /projects for /:projectId/invite
 router.use('/documents', document_routes_1.default);
+router.use('/', invite_routes_1.default); // Also mount at root for /invites/:token
 exports.default = router;

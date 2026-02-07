@@ -72,12 +72,14 @@ async function createDocument(req, res) {
 async function listDocuments(req, res) {
     const { project_id } = req.query;
     const userId = req.user.userId;
-    // Validate required query parameter
-    if (!project_id || typeof project_id !== 'string') {
-        throw new errors_1.ValidationError('project_id query parameter is required');
+    if (project_id && typeof project_id === 'string') {
+        const result = await documentService.listDocuments(project_id, userId);
+        res.status(200).json(result);
     }
-    const result = await documentService.listDocuments(project_id, userId);
-    res.status(200).json(result);
+    else {
+        const result = await documentService.listAllDocuments(userId);
+        res.status(200).json(result);
+    }
 }
 /**
  * GET /documents/:id

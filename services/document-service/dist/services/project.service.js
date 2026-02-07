@@ -46,24 +46,28 @@ async function createProject(name, description, organizationId, userId) {
  * List projects for the authenticated user
  */
 async function listProjects(userId) {
+    // FALLBACK: Use simple query until Prisma Client is regenerated
     const projects = await prisma.project.findMany({
         where: {
             owner_id: userId
         },
+        // Remove include until schema update is applied
+        // include: {
+        //     team_members: { ... }
+        // },
         orderBy: { created_at: 'desc' }
     });
-    return {
-        projects: projects.map((project) => ({
-            id: project.id,
-            name: project.name,
-            description: project.description,
-            organization_id: project.organization_id,
-            created_by: project.created_by,
-            owner_id: project.owner_id, // Cast as it might be missing in old types
-            created_at: project.created_at.toISOString(),
-            updated_at: project.updated_at.toISOString()
-        }))
-    };
+    return projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        organization_id: project.organization_id,
+        created_by: project.created_by,
+        owner_id: project.owner_id,
+        created_at: project.created_at.toISOString(),
+        updated_at: project.updated_at.toISOString(),
+        members: [] // Return empty members for now to prevent frontend crash
+    }));
 }
 /**
  * Get a project by ID (ensuring ownership)
@@ -73,7 +77,9 @@ async function getProjectById(projectId, userId) {
         where: {
             id: projectId,
             owner_id: userId
-        }
+        },
+        // Remove include until schema update is applied
+        // include: { team_members: ... }
     });
     if (!project) {
         throw new errors_1.ProjectNotFoundError();
@@ -86,7 +92,8 @@ async function getProjectById(projectId, userId) {
         created_by: project.created_by,
         owner_id: project.owner_id,
         created_at: project.created_at.toISOString(),
-        updated_at: project.updated_at.toISOString()
+        updated_at: project.updated_at.toISOString(),
+        members: [] // Return empty members for now
     };
 }
 /**

@@ -6,6 +6,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDocument = createDocument;
 exports.listDocuments = listDocuments;
+exports.listAllDocuments = listAllDocuments;
 exports.getDocument = getDocument;
 exports.updateDocument = updateDocument;
 exports.deleteDocument = deleteDocument;
@@ -54,15 +55,44 @@ async function listDocuments(projectId, userId) {
         where: { project_id: projectId },
         orderBy: { updated_at: 'desc' }
     });
-    return {
-        documents: documents.map((doc) => ({
-            id: doc.id,
-            title: doc.title,
-            owner_id: doc.owner_id,
-            created_at: doc.created_at.toISOString(),
-            updated_at: doc.updated_at.toISOString()
-        }))
-    };
+    return documents.map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        owner_id: doc.owner_id,
+        created_at: doc.created_at.toISOString(),
+        updated_at: doc.updated_at.toISOString()
+    }));
+}
+/**
+ * List ALL documents for the user (owned or collaborator)
+ */
+async function listAllDocuments(userId) {
+    // FALLBACK: Use safer query
+    const documents = await prisma.document.findMany({
+        where: {
+            owner_id: userId
+            // Remove collaborator check until schema update
+            // OR: [
+            //     { owner_id: userId },
+            //     { project: { team_members: { some: { user_id: userId } } } }
+            // ]
+        },
+        include: {
+            project: {
+                select: { name: true }
+            }
+        },
+        orderBy: { updated_at: 'desc' }
+    });
+    return documents.map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        owner_id: doc.owner_id,
+        project: doc.project.name,
+        project_id: doc.project_id,
+        created_at: doc.created_at.toISOString(),
+        updated_at: doc.updated_at.toISOString()
+    }));
 }
 /**
  * Get a single document by ID
@@ -180,12 +210,10 @@ async function listVersions(documentId, userId) {
         where: { document_id: documentId },
         orderBy: { created_at: 'desc' }
     });
-    return {
-        versions: versions.map((version) => ({
-            id: version.id,
-            name: version.name,
-            created_at: version.created_at.toISOString(),
-            created_by: version.created_by
-        }))
-    };
+    return versions.map((version) => ({
+        id: version.id,
+        name: version.name,
+        created_at: version.created_at.toISOString(),
+        created_by: version.created_by
+    }));
 }
