@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -30,6 +31,13 @@ model Organization {
   // Relations
   users    User[]
   projects Project[]
+  members  OrganizationMember[]
+
+  // Billing
+  stripe_customer_id String?  @db.Text
+  subscription_status String @default("free") @db.Text
+  subscription_plan   String @default("free") @db.Text
+  current_period_end  DateTime? @db.Timestamptz
 
   @@map("organizations")
 }
@@ -53,14 +61,31 @@ model User {
   // Relations
   organization      Organization      @relation(fields: [organization_id], references: [id])
   projects_created  Project[]         @relation("ProjectCreatedBy")
+  projects_owned    Project[]         @relation("ProjectOwner")
   documents_owned   Document[]        @relation("DocumentOwner")
   document_versions DocumentVersion[] @relation("VersionCreatedBy")
   access_logs       AccessLog[]
+  memberships       OrganizationMember[]
+  team_memberships  TeamMember[]
 
   // Indexes
   @@index([organization_id])
   @@index([email])
   @@map("users")
+}
+
+model OrganizationMember {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String       @db.Uuid
+  user_id         String       @db.Uuid
+  role            String       @default("member") @db.Text
+  joined_at       DateTime     @default(now()) @db.Timestamptz
+
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  user            User         @relation(fields: [user_id], references: [id])
+
+  @@unique([organization_id, user_id])
+  @@map("organization_members")
 }
 
 // ============================================================================
@@ -74,16 +99,23 @@ model Project {
   description     String?  @db.Text
   organization_id String   @db.Uuid
   created_by      String   @db.Uuid
+  owner_id        String   @db.Uuid
   created_at      DateTime @default(now()) @db.Timestamptz
   updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
   organization Organization @relation(fields: [organization_id], references: [id])
   creator      User         @relation("ProjectCreatedBy", fields: [created_by], references: [id])
+  owner        User         @relation("ProjectOwner", fields: [owner_id], references: [id])
   documents    Document[]
+  presentations Presentation[]
+  canvas       Canvas[]
+  team_members TeamMember[]
+  invitations  Invitation[]
 
   // Indexes
   @@index([organization_id])
+  @@index([owner_id])
   @@map("projects")
 }
 
@@ -158,4 +190,117 @@ model AccessLog {
   @@index([user_id])
   @@index([created_at])
   @@map("access_logs")
+}
+
+// ============================================================================
+// TABLE: presentations
+// Owner: Document Service
+// Description: Presentations containing slides.
+// ============================================================================
+model Presentation {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id  String   @db.Uuid
+  title       String   @db.Text
+  template    String?  @db.Text
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+  slides  Slide[]
+
+  // Indexes
+  @@index([project_id])
+  @@map("presentations")
+}
+
+// ============================================================================
+// TABLE: slides
+// Owner: Document Service
+// Description: Presentation slides for a project.
+// ============================================================================
+model Slide {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  presentation_id String   @db.Uuid
+  title           String   @db.Text
+  content         String   @db.Text
+  order           Int      @default(0)
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  presentation Presentation @relation(fields: [presentation_id], references: [id])
+
+  // Indexes
+  @@index([presentation_id])
+  @@map("slides")
+}
+
+// ============================================================================
+// TABLE: canvas
+// Owner: Document Service
+// Description: Canvas data for projects.
+// ============================================================================
+model Canvas {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String  @db.Uuid
+  data      Json     @default("{}")
+  name      String   @default("Untitled Canvas") @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+
+  // Indexes
+  @@index([project_id])
+  @@map("canvas")
+}
+
+// ============================================================================
+// TABLE: team_members
+// Owner: Document Service
+// Description: Project-level team members.
+// ============================================================================
+model TeamMember {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  user_id    String   @db.Uuid
+  role       String   @default("viewer") @db.Text
+  joined_at  DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+
+  // Indexes
+  @@unique([project_id, user_id])
+  @@index([project_id])
+  @@index([user_id])
+  @@map("team_members")
+}
+
+// ============================================================================
+// TABLE: invitations
+// Owner: Document Service
+// Description: Pending email invitations for projects.
+// ============================================================================
+model Invitation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  email      String   @db.Text
+  role       String   @default("viewer") @db.Text
+  token      String   @unique @db.Text
+  expires_at DateTime @db.Timestamptz
+  accepted   Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+
+  // Indexes
+  @@index([project_id])
+  @@index([token])
+  @@map("invitations")
 }

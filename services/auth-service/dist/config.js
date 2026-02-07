@@ -9,4 +9,15 @@ dotenv_1.default.config();
 exports.config = {
     port: process.env.PORT || 3001,
     nodeEnv: process.env.NODE_ENV || 'development',
+    // JWT Configuration
+    jwt: {
+        secret: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production',
+        refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production',
+        expiresIn: '15m', // Access token: 15 minutes
+        refreshExpiresIn: '7d' // Refresh token: 7 days
+    },
+    // Bcrypt Configuration
+    bcrypt: {
+        saltRounds: 12
+    }
 };

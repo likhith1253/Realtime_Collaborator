@@ -44,6 +44,8 @@ exports.updateDocument = updateDocument;
 exports.deleteDocument = deleteDocument;
 exports.createVersion = createVersion;
 exports.listVersions = listVersions;
+exports.listProjectDocuments = listProjectDocuments;
+exports.createProjectDocument = createProjectDocument;
 const documentService = __importStar(require("../services/document.service"));
 const errors_1 = require("../utils/errors");
 /**
@@ -91,20 +93,23 @@ async function getDocument(req, res) {
     res.status(200).json(document);
 }
 /**
- * PATCH /documents/:id
- * Update a document
+ * PATCH/PUT /documents/:id
+ * Update a document (title and/or content)
  */
 async function updateDocument(req, res) {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, content } = req.body;
     const userId = req.user.userId;
     if (!id) {
         throw new errors_1.ValidationError('Document ID is required');
     }
-    if (!title || typeof title !== 'string') {
-        throw new errors_1.ValidationError('Title is required');
+    if (!title && content === undefined) {
+        throw new errors_1.ValidationError('At least title or content is required');
     }
-    const document = await documentService.updateDocument(id, title, userId);
+    if (title !== undefined && typeof title !== 'string') {
+        throw new errors_1.ValidationError('Title must be a string');
+    }
+    const document = await documentService.updateDocument(id, userId, { title, content });
     res.status(200).json(document);
 }
 /**
@@ -146,4 +151,34 @@ async function listVersions(req, res) {
     }
     const result = await documentService.listVersions(id, userId);
     res.status(200).json(result);
+}
+/**
+ * GET /projects/:projectId/documents
+ * List documents for a specific project
+ */
+async function listProjectDocuments(req, res) {
+    const { projectId } = req.params;
+    const userId = req.user.userId;
+    if (!projectId) {
+        throw new errors_1.ValidationError('Project ID is required');
+    }
+    const result = await documentService.listDocuments(projectId, userId);
+    res.status(200).json(result);
+}
+/**
+ * POST /projects/:projectId/documents
+ * Create a new document in a specific project
+ */
+async function createProjectDocument(req, res) {
+    const { projectId } = req.params;
+    const { title } = req.body;
+    const userId = req.user.userId;
+    if (!projectId) {
+        throw new errors_1.ValidationError('Project ID is required');
+    }
+    if (!title || typeof title !== 'string') {
+        throw new errors_1.ValidationError('Title is required');
+    }
+    const document = await documentService.createDocument(title, projectId, userId);
+    res.status(201).json(document);
 }

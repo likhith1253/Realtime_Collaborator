@@ -21,7 +21,26 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3004',
+    'http://localhost:3005'
+].filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
+
 
 // Request parsing
 app.use(express.json());

@@ -86,8 +86,20 @@ export class DocumentNotFoundError extends NotFoundError {
     }
 }
 
+export class CanvasNotFoundError extends NotFoundError {
+    constructor() {
+        super('Canvas not found', 'CANVAS_NOT_FOUND');
+    }
+}
+
 export class SlugExistsError extends ConflictError {
     constructor() {
         super('An organization with this slug already exists', 'SLUG_EXISTS');
+    }
+}
+
+export class UserNotFoundError extends NotFoundError {
+    constructor(message: string = 'User not found') {
+        super(message, 'USER_NOT_FOUND');
     }
 }

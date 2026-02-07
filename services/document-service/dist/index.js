@@ -22,7 +22,25 @@ const prisma = new database_1.PrismaClient();
 const app = (0, express_1.default)();
 // Security middleware
 app.use((0, helmet_1.default)());
-app.use((0, cors_1.default)());
+const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3004',
+    'http://localhost:3005'
+].filter(Boolean);
+app.use((0, cors_1.default)({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
 // Request parsing
 app.use(express_1.default.json());
 // Request logging

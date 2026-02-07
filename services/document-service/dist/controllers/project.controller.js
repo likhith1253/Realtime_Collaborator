@@ -39,6 +39,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createProject = createProject;
 exports.listProjects = listProjects;
+exports.getProjectById = getProjectById;
 exports.deleteProject = deleteProject;
 const projectService = __importStar(require("../services/project.service"));
 const errors_1 = require("../utils/errors");
@@ -49,28 +50,38 @@ const errors_1 = require("../utils/errors");
 async function createProject(req, res) {
     const { name, description, organization_id } = req.body;
     const userId = req.user.userId;
+    // Use provided organization_id or fall back to user's organizationId from token
+    const targetOrgId = organization_id || req.user.organizationId;
     // Validate required fields
     if (!name || typeof name !== 'string') {
         throw new errors_1.ValidationError('Name is required');
     }
-    if (!organization_id || typeof organization_id !== 'string') {
+    if (!targetOrgId) {
         throw new errors_1.ValidationError('Organization ID is required');
     }
-    const project = await projectService.createProject(name, description, organization_id, userId);
+    const project = await projectService.createProject(name, description, targetOrgId, userId);
     res.status(201).json(project);
 }
 /**
  * GET /projects
- * List projects in an organization
+ * List projects for the authenticated user
  */
 async function listProjects(req, res) {
-    const { organization_id } = req.query;
     const userId = req.user.userId;
-    // Validate required query parameter
-    if (!organization_id || typeof organization_id !== 'string') {
-        throw new errors_1.ValidationError('organization_id query parameter is required');
+    const result = await projectService.listProjects(userId);
+    res.status(200).json(result);
+}
+/**
+ * GET /projects/:id
+ * Get a specific project
+ */
+async function getProjectById(req, res) {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    if (!id) {
+        throw new errors_1.ValidationError('Project ID is required');
     }
-    const result = await projectService.listProjects(organization_id, userId);
+    const result = await projectService.getProjectById(id, userId);
     res.status(200).json(result);
 }
 /**

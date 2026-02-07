@@ -50,6 +50,8 @@ router.get('/', (0, auth_middleware_1.auth)('doc:read'), (0, error_middleware_1.
 router.get('/:id', (0, auth_middleware_1.auth)('doc:read'), (0, error_middleware_1.asyncHandler)(documentController.getDocument));
 // PATCH /documents/:id - Update document (requires doc:write scope)
 router.patch('/:id', (0, auth_middleware_1.auth)('doc:write'), (0, error_middleware_1.asyncHandler)(documentController.updateDocument));
+// PUT /documents/:id - Update document (REST alias for PATCH)
+router.put('/:id', (0, auth_middleware_1.auth)('doc:write'), (0, error_middleware_1.asyncHandler)(documentController.updateDocument));
 // DELETE /documents/:id - Delete document (requires doc:delete scope)
 router.delete('/:id', (0, auth_middleware_1.auth)('doc:delete'), (0, error_middleware_1.asyncHandler)(documentController.deleteDocument));
 // POST /documents/:id/versions - Create version (requires doc:write scope)

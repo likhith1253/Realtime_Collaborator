@@ -38,6 +38,13 @@ router.patch(
     asyncHandler(documentController.updateDocument)
 );
 
+// PUT /documents/:id - Update document (REST alias for PATCH)
+router.put(
+    '/:id',
+    auth('doc:write'),
+    asyncHandler(documentController.updateDocument)
+);
+
 // DELETE /documents/:id - Delete document (requires doc:delete scope)
 router.delete(
     '/:id',

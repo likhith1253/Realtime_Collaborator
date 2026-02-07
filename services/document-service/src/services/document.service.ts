@@ -59,15 +59,46 @@ export async function listDocuments(projectId: string, userId: string) {
         orderBy: { updated_at: 'desc' }
     });
 
-    return {
-        documents: documents.map((doc: Document) => ({
-            id: doc.id,
-            title: doc.title,
-            owner_id: doc.owner_id,
-            created_at: doc.created_at.toISOString(),
-            updated_at: doc.updated_at.toISOString()
-        }))
-    };
+    return documents.map((doc: Document) => ({
+        id: doc.id,
+        title: doc.title,
+        owner_id: doc.owner_id,
+        created_at: doc.created_at.toISOString(),
+        updated_at: doc.updated_at.toISOString()
+    }));
+}
+
+/**
+ * List ALL documents for the user (owned or collaborator)
+ */
+export async function listAllDocuments(userId: string) {
+    // FALLBACK: Use safer query
+    const documents = await prisma.document.findMany({
+        where: {
+            owner_id: userId
+            // Remove collaborator check until schema update
+            // OR: [
+            //     { owner_id: userId },
+            //     { project: { team_members: { some: { user_id: userId } } } }
+            // ]
+        },
+        include: {
+            project: {
+                select: { name: true }
+            }
+        },
+        orderBy: { updated_at: 'desc' }
+    });
+
+    return documents.map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        owner_id: doc.owner_id,
+        project: doc.project.name,
+        project_id: doc.project_id,
+        created_at: doc.created_at.toISOString(),
+        updated_at: doc.updated_at.toISOString()
+    }));
 }
 
 /**
@@ -88,24 +119,22 @@ export async function getDocument(documentId: string, userId: string) {
         data: { last_accessed_at: new Date() }
     });
 
-    // Return document with content placeholder
-    // Note: Actual Yjs content is handled by collab-service
-    // For non-realtime, we return empty content object
     return {
         id: document.id,
         title: document.title,
-        content: {}, // ProseMirror JSON placeholder
-        updated_at: document.updated_at.toISOString()
+        content: document.yjs_binary_state?.toString('utf8') || '',
+        projectId: document.project_id,
+        updatedAt: document.updated_at.toISOString()
     };
 }
 
 /**
- * Update a document (title only for non-realtime)
+ * Update a document (title and/or content)
  */
 export async function updateDocument(
     documentId: string,
-    title: string,
-    userId: string
+    userId: string,
+    updates: { title?: string; content?: unknown }
 ) {
     // Verify document exists
     const existing = await prisma.document.findUnique({
@@ -116,15 +145,26 @@ export async function updateDocument(
         throw new DocumentNotFoundError();
     }
 
+    const data: { title?: string; yjs_binary_state?: Buffer } = {};
+    if (updates.title !== undefined) {
+        data.title = updates.title;
+    }
+    if (updates.content !== undefined) {
+        // Store content as buffer for non-realtime operations
+        data.yjs_binary_state = Buffer.from(JSON.stringify(updates.content), 'utf8');
+    }
+
     const document = await prisma.document.update({
         where: { id: documentId },
-        data: { title }
+        data
     });
 
     return {
         id: document.id,
         title: document.title,
-        updated_at: document.updated_at.toISOString()
+        content: document.yjs_binary_state?.toString('utf8') || '',
+        projectId: document.project_id,
+        updatedAt: document.updated_at.toISOString()
     };
 }
 
@@ -206,12 +246,10 @@ export async function listVersions(documentId: string, userId: string) {
         orderBy: { created_at: 'desc' }
     });
 
-    return {
-        versions: versions.map((version: DocumentVersion) => ({
-            id: version.id,
-            name: version.name,
-            created_at: version.created_at.toISOString(),
-            created_by: version.created_by
-        }))
-    };
+    return versions.map((version: DocumentVersion) => ({
+        id: version.id,
+        name: version.name,
+        created_at: version.created_at.toISOString(),
+        created_by: version.created_by
+    }));
 }

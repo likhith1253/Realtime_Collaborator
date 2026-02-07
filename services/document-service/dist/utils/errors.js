@@ -5,7 +5,7 @@
  * Following API contract error response format
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SlugExistsError = exports.DocumentNotFoundError = exports.ProjectNotFoundError = exports.OrganizationNotFoundError = exports.InsufficientScopeError = exports.InvalidTokenError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.ValidationError = exports.AppError = void 0;
+exports.SlugExistsError = exports.CanvasNotFoundError = exports.DocumentNotFoundError = exports.ProjectNotFoundError = exports.OrganizationNotFoundError = exports.InsufficientScopeError = exports.InvalidTokenError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.ValidationError = exports.AppError = void 0;
 class AppError extends Error {
     constructor(message, statusCode, code) {
         super(message);
@@ -83,6 +83,12 @@ class DocumentNotFoundError extends NotFoundError {
     }
 }
 exports.DocumentNotFoundError = DocumentNotFoundError;
+class CanvasNotFoundError extends NotFoundError {
+    constructor() {
+        super('Canvas not found', 'CANVAS_NOT_FOUND');
+    }
+}
+exports.CanvasNotFoundError = CanvasNotFoundError;
 class SlugExistsError extends ConflictError {
     constructor() {
         super('An organization with this slug already exists', 'SLUG_EXISTS');

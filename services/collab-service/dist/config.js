@@ -9,4 +9,13 @@ dotenv_1.default.config();
 exports.config = {
     port: process.env.PORT || 3003,
     nodeEnv: process.env.NODE_ENV || 'development',
+    // JWT Configuration (must match auth-service for token verification)
+    jwt: {
+        secret: process.env.JWT_SECRET || 'access-secret-fallback'
+    },
+    // Persistence Configuration
+    persistence: {
+        // Debounce delay for saving Yjs state to database (in ms)
+        saveDebounceMs: 1500
+    }
 };

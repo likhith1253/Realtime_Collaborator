@@ -13,6 +13,6 @@ export const config = {
 
     // JWT Configuration - must match auth-service for token verification
     jwt: {
-        secret: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production'
+        secret: process.env.JWT_SECRET || 'access-secret-fallback'
     }
 };

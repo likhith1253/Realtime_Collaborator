@@ -12,7 +12,8 @@ import { InvalidTokenError } from './errors';
 export interface TokenPayload {
     userId: string;
     email: string;
-    organizationId?: string;
+    role: string;
+    organizationId: string;
     scopes?: string[];
 }
 

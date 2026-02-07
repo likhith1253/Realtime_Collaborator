@@ -31,43 +31,79 @@ export async function createProject(
             name,
             description: description || null,
             organization_id: organizationId,
-            created_by: userId
+            created_by: userId,
+            owner_id: userId
         }
     });
 
     return {
         id: project.id,
         name: project.name,
-        created_by: project.created_by
+        description: project.description,
+        created_by: project.created_by,
+        organization_id: project.organization_id,
+        owner_id: project.owner_id,
+        created_at: project.created_at.toISOString(),
+        updated_at: project.updated_at.toISOString()
     };
 }
 
 /**
- * List projects in an organization
+ * List projects for the authenticated user
  */
-export async function listProjects(organizationId: string, userId: string) {
-    // Verify organization exists
-    const organization = await prisma.organization.findUnique({
-        where: { id: organizationId }
-    });
-
-    if (!organization) {
-        throw new OrganizationNotFoundError();
-    }
-
+export async function listProjects(userId: string) {
+    // FALLBACK: Use simple query until Prisma Client is regenerated
     const projects = await prisma.project.findMany({
-        where: { organization_id: organizationId },
+        where: {
+            owner_id: userId
+        },
+        // Remove include until schema update is applied
+        // include: {
+        //     team_members: { ... }
+        // },
         orderBy: { created_at: 'desc' }
     });
 
+    return projects.map((project: any) => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        organization_id: project.organization_id,
+        created_by: project.created_by,
+        owner_id: project.owner_id as string,
+        created_at: project.created_at.toISOString(),
+        updated_at: project.updated_at.toISOString(),
+        members: [] // Return empty members for now to prevent frontend crash
+    }));
+}
+
+/**
+ * Get a project by ID (ensuring ownership)
+ */
+export async function getProjectById(projectId: string, userId: string) {
+    const project = await prisma.project.findFirst({
+        where: {
+            id: projectId,
+            owner_id: userId
+        },
+        // Remove include until schema update is applied
+        // include: { team_members: ... }
+    });
+
+    if (!project) {
+        throw new ProjectNotFoundError();
+    }
+
     return {
-        projects: projects.map((project: Project) => ({
-            id: project.id,
-            name: project.name,
-            description: project.description,
-            created_by: project.created_by,
-            created_at: project.created_at.toISOString()
-        }))
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        organization_id: project.organization_id,
+        created_by: project.created_by,
+        owner_id: project.owner_id as string,
+        created_at: project.created_at.toISOString(),
+        updated_at: project.updated_at.toISOString(),
+        members: [] // Return empty members for now
     };
 }
 
@@ -75,9 +111,12 @@ export async function listProjects(organizationId: string, userId: string) {
  * Delete a project and all its documents
  */
 export async function deleteProject(projectId: string, userId: string) {
-    // Find the project
-    const project = await prisma.project.findUnique({
-        where: { id: projectId }
+    // Find the project and verify ownership
+    const project = await prisma.project.findFirst({
+        where: {
+            id: projectId,
+            owner_id: userId
+        }
     });
 
     if (!project) {

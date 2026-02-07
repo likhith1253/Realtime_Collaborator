@@ -41,11 +41,18 @@ const express_1 = require("express");
 const error_middleware_1 = require("../middleware/error.middleware");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const projectController = __importStar(require("../controllers/project.controller"));
+const documentController = __importStar(require("../controllers/document.controller"));
 const router = (0, express_1.Router)();
 // POST /projects - Create project (requires project:write scope)
 router.post('/', (0, auth_middleware_1.auth)('project:write'), (0, error_middleware_1.asyncHandler)(projectController.createProject));
 // GET /projects - List projects (requires project:read scope)
 router.get('/', (0, auth_middleware_1.auth)('project:read'), (0, error_middleware_1.asyncHandler)(projectController.listProjects));
+// GET /projects/:id - Get project (requires project:read scope)
+router.get('/:id', (0, auth_middleware_1.auth)('project:read'), (0, error_middleware_1.asyncHandler)(projectController.getProjectById));
 // DELETE /projects/:id - Delete project (requires project:delete scope)
 router.delete('/:id', (0, auth_middleware_1.auth)('project:delete'), (0, error_middleware_1.asyncHandler)(projectController.deleteProject));
+// POST /projects/:projectId/documents - Create document in project
+router.post('/:projectId/documents', (0, auth_middleware_1.auth)('doc:write'), (0, error_middleware_1.asyncHandler)(documentController.createProjectDocument));
+// GET /projects/:projectId/documents - List documents in project
+router.get('/:projectId/documents', (0, auth_middleware_1.auth)('doc:read'), (0, error_middleware_1.asyncHandler)(documentController.listProjectDocuments));
 exports.default = router;

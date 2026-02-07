@@ -1,0 +1,7 @@
+﻿SUCCESS: http://localhost:8000/health
+FAILURE: http://localhost:3001/health - Unable to connect to the remote server
+FAILURE: http://localhost:3002/health - Unable to connect to the remote server
+FAILURE: http://localhost:3003/health - Unable to connect to the remote server
+FAILURE: http://localhost:3004/health - Unable to connect to the remote server
+FAILURE: http://localhost:8001/ - The remote server returned an error: (404) Not Found.
+FAILURE: http://localhost:3000 - Unable to connect to the remote server

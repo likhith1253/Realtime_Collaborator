@@ -35,13 +35,13 @@ export async function listDocuments(req: Request, res: Response): Promise<void> 
     const { project_id } = req.query;
     const userId = req.user!.userId;
 
-    // Validate required query parameter
-    if (!project_id || typeof project_id !== 'string') {
-        throw new ValidationError('project_id query parameter is required');
+    if (project_id && typeof project_id === 'string') {
+        const result = await documentService.listDocuments(project_id, userId);
+        res.status(200).json(result);
+    } else {
+        const result = await documentService.listAllDocuments(userId);
+        res.status(200).json(result);
     }
-
-    const result = await documentService.listDocuments(project_id, userId);
-    res.status(200).json(result);
 }
 
 /**
@@ -61,22 +61,25 @@ export async function getDocument(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * PATCH /documents/:id
- * Update a document
+ * PATCH/PUT /documents/:id
+ * Update a document (title and/or content)
  */
 export async function updateDocument(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, content } = req.body;
     const userId = req.user!.userId;
 
     if (!id) {
         throw new ValidationError('Document ID is required');
     }
-    if (!title || typeof title !== 'string') {
-        throw new ValidationError('Title is required');
+    if (!title && content === undefined) {
+        throw new ValidationError('At least title or content is required');
+    }
+    if (title !== undefined && typeof title !== 'string') {
+        throw new ValidationError('Title must be a string');
     }
 
-    const document = await documentService.updateDocument(id, title, userId);
+    const document = await documentService.updateDocument(id, userId, { title, content });
     res.status(200).json(document);
 }
 
@@ -127,4 +130,40 @@ export async function listVersions(req: Request, res: Response): Promise<void> {
 
     const result = await documentService.listVersions(id, userId);
     res.status(200).json(result);
+}
+
+/**
+ * GET /projects/:projectId/documents
+ * List documents for a specific project
+ */
+export async function listProjectDocuments(req: Request, res: Response): Promise<void> {
+    const { projectId } = req.params;
+    const userId = req.user!.userId;
+
+    if (!projectId) {
+        throw new ValidationError('Project ID is required');
+    }
+
+    const result = await documentService.listDocuments(projectId, userId);
+    res.status(200).json(result);
+}
+
+/**
+ * POST /projects/:projectId/documents
+ * Create a new document in a specific project
+ */
+export async function createProjectDocument(req: Request, res: Response): Promise<void> {
+    const { projectId } = req.params;
+    const { title } = req.body;
+    const userId = req.user!.userId;
+
+    if (!projectId) {
+        throw new ValidationError('Project ID is required');
+    }
+    if (!title || typeof title !== 'string') {
+        throw new ValidationError('Title is required');
+    }
+
+    const document = await documentService.createDocument(title, projectId, userId);
+    res.status(201).json(document);
 }

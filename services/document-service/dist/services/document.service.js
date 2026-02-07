@@ -79,20 +79,18 @@ async function getDocument(documentId, userId) {
         where: { id: documentId },
         data: { last_accessed_at: new Date() }
     });
-    // Return document with content placeholder
-    // Note: Actual Yjs content is handled by collab-service
-    // For non-realtime, we return empty content object
     return {
         id: document.id,
         title: document.title,
-        content: {}, // ProseMirror JSON placeholder
-        updated_at: document.updated_at.toISOString()
+        content: document.yjs_binary_state?.toString('utf8') || '',
+        projectId: document.project_id,
+        updatedAt: document.updated_at.toISOString()
     };
 }
 /**
- * Update a document (title only for non-realtime)
+ * Update a document (title and/or content)
  */
-async function updateDocument(documentId, title, userId) {
+async function updateDocument(documentId, userId, updates) {
     // Verify document exists
     const existing = await prisma.document.findUnique({
         where: { id: documentId }
@@ -100,14 +98,24 @@ async function updateDocument(documentId, title, userId) {
     if (!existing) {
         throw new errors_1.DocumentNotFoundError();
     }
+    const data = {};
+    if (updates.title !== undefined) {
+        data.title = updates.title;
+    }
+    if (updates.content !== undefined) {
+        // Store content as buffer for non-realtime operations
+        data.yjs_binary_state = Buffer.from(JSON.stringify(updates.content), 'utf8');
+    }
     const document = await prisma.document.update({
         where: { id: documentId },
-        data: { title }
+        data
     });
     return {
         id: document.id,
         title: document.title,
-        updated_at: document.updated_at.toISOString()
+        content: document.yjs_binary_state?.toString('utf8') || '',
+        projectId: document.project_id,
+        updatedAt: document.updated_at.toISOString()
     };
 }
 /**

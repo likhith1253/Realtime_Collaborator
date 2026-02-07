@@ -1,0 +1,12 @@
+{
+    "name": "ai-service",
+    "version": "1.0.0",
+    "description": "AI Service for Real Time Content Collaboration",
+    "scripts": {
+        "dev": "python -m src.main",
+        "start": "python -m src.main"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
