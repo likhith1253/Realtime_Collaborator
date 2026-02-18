@@ -16,6 +16,8 @@ export interface TokenPayload {
     email: string;
     role: string;
     organizationId: string;
+    name?: string;
+    avatar?: string | null;
 }
 
 /**
