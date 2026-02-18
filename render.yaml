@@ -8,7 +8,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install && npm run build -w services/api-gateway
+    buildCommand: npm install && npm run build -w packages/types && npm run build -w packages/database && npm run build -w services/api-gateway
     startCommand: npm start -w services/api-gateway
     envVars:
       - key: PORT
@@ -37,7 +37,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install && npm run build -w services/auth-service
+    buildCommand: npm install && npm run build -w packages/types && npm run build -w packages/database && npm run build -w services/auth-service
     startCommand: npx prisma db push --accept-data-loss --schema=packages/database/prisma/schema.prisma && npm start -w services/auth-service
     envVars:
       - key: PORT
@@ -64,7 +64,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install && npm run build -w services/organization-service
+    buildCommand: npm install && npm run build -w packages/types && npm run build -w packages/database && npm run build -w services/organization-service
     startCommand: npm start -w services/organization-service
     envVars:
       - key: PORT
@@ -96,7 +96,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install && npm run build -w services/collab-service
+    buildCommand: npm install && npm run build -w packages/types && npm run build -w packages/database && npm run build -w services/collab-service
     startCommand: npm start -w services/collab-service
     envVars:
       - key: PORT
@@ -122,7 +122,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install && npm run build -w services/document-service
+    buildCommand: npm install && npm run build -w packages/types && npm run build -w packages/database && npm run build -w services/document-service
     startCommand: npm start -w services/document-service
     envVars:
       - key: PORT
