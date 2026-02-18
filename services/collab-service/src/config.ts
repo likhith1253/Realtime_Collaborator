@@ -1,6 +1,16 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Ensure .env is loaded from the collab-service folder regardless of CWD
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const getEnv = (key: string): string => {
+    const value = process.env[key];
+    if (!value) {
+        throw new Error(`❌ Missing required environment variable: ${key}`);
+    }
+    return value;
+};
 
 export const config = {
     port: process.env.PORT || 3003,
@@ -8,12 +18,15 @@ export const config = {
 
     // JWT Configuration (must match auth-service for token verification)
     jwt: {
-        secret: process.env.JWT_SECRET || 'access-secret-fallback'
+        secret: getEnv('JWT_SECRET')
     },
 
     // Persistence Configuration
     persistence: {
         // Debounce delay for saving Yjs state to database (in ms)
         saveDebounceMs: 1500
-    }
+    },
+
+    // Database Configuration
+    databaseUrl: getEnv('DATABASE_URL')
 };

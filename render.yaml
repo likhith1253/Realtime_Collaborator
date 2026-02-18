@@ -1,0 +1,163 @@
+services:
+  # --------------------------------------------------------------------------------
+  # 1. API GATEWAY
+  # The entry point for the frontend. Proxies requests to other services.
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: api-gateway
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build -w services/api-gateway
+    startCommand: npm start -w services/api-gateway
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false # User must provide their Vercel frontend URL here
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service:10000
+      - key: ORG_SERVICE_URL
+        value: http://organization-service:10000
+      - key: COLLAB_SERVICE_URL
+        value: http://collab-service:10000
+      - key: DOCS_SERVICE_URL
+        value: http://document-service:10000
+      - key: AI_SERVICE_URL
+        value: http://ai-service:10000 # Optional if AI service exists
+
+  # --------------------------------------------------------------------------------
+  # 2. AUTH SERVICE
+  # Handles user authentication and management.
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: auth-service
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build -w services/auth-service
+    startCommand: npm start -w services/auth-service
+    # Run migrations before starting (using the shared database package)
+    preDeployCommand: cd packages/database && npx prisma db push --accept-data-loss
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: collab-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+
+  # --------------------------------------------------------------------------------
+  # 3. ORGANIZATION SERVICE
+  # Handles organizations and billing.
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: organization-service
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build -w services/organization-service
+    startCommand: npm start -w services/organization-service
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: collab-db
+          property: connectionString
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: auth-service
+          envVarKey: JWT_SECRET
+      - key: CLIENT_URL
+        sync: false # Frontend URL
+      - key: STRIPE_SECRET_KEY
+        sync: false # Optional/Placeholder
+      - key: CORS_ORIGIN
+        sync: false
+
+  # --------------------------------------------------------------------------------
+  # 4. COLLAB SERVICE
+  # Handles real-time collaboration (Socket.io).
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: collab-service
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build -w services/collab-service
+    startCommand: npm start -w services/collab-service
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: collab-db
+          property: connectionString
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: auth-service
+          envVarKey: JWT_SECRET
+
+  # --------------------------------------------------------------------------------
+  # 5. DOCUMENT SERVICE
+  # Handles document storage and management.
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: document-service
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build -w services/document-service
+    startCommand: npm start -w services/document-service
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: collab-db
+          property: connectionString
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: auth-service
+          envVarKey: JWT_SECRET
+      - key: FRONTEND_URL
+        sync: false
+      # Email settings (Optional)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+
+# --------------------------------------------------------------------------------
+# DATABASE
+# Managed PostgreSQL database.
+# --------------------------------------------------------------------------------
+databases:
+  - name: collab-db
+    plan: free
+    databaseName: collab_db
+    user: collab_user

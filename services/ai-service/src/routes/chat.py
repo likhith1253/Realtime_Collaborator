@@ -7,9 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from src.config import settings
+
 # Configure Gemini
-api_key = os.environ.get("GEMINI_API_KEY")
+api_key = settings.gemini_api_key
 if not api_key:
+    # This should technically be caught by Pydantic at startup, but good as a sanity check
     logger.error("GEMINI_API_KEY is not set in environment!")
 else:
     logger.info(f"GEMINI_API_KEY is set (starts with {api_key[:5]}...)")

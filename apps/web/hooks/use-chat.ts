@@ -71,14 +71,14 @@ export function useChat(projectId: string | null) {
                     sender: data.sender,
                     content: data.content,
                     timestamp: data.timestamp,
-                    isOwn: user?.userId === data.sender.id
+                    isOwn: user?.id === data.sender.id
                 };
                 return [...prev, newMessage];
             });
         });
 
         return cleanup;
-    }, [projectId, user?.userId]);
+    }, [projectId, user?.id]);
 
     const sendMessage = useCallback((content: string) => {
         if (!projectId || !user || !content.trim()) return;

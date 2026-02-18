@@ -1,5 +1,29 @@
 import type { NextConfig } from "next";
 
+const requiredEnvs = [
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_AUTH_URL',
+  'NEXT_PUBLIC_DOCUMENT_URL',
+  'NEXT_PUBLIC_COLLAB_URL',
+  'NEXT_PUBLIC_AI_URL',
+];
+
+const missingEnvs = requiredEnvs.filter((key) => !process.env[key]);
+
+if (missingEnvs.length > 0) {
+  console.error(
+    `❌ Missing required environment variables:\n${missingEnvs.join('\n')}`
+  );
+  // Only throw in production build/start, allow dev to maybe limp along if that was the user intent (though strict is better)
+  // For this task, we want strict fail-fast as per "PHASE 4 — RUNTIME VALIDATION (CRITICAL)"
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`Missing required environment variables: ${missingEnvs.join(', ')}`);
+  } else {
+    console.warn("⚠️  Running in development validation failure mode (some envs missing).");
+  }
+}
+
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
