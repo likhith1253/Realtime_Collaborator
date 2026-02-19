@@ -232,6 +232,8 @@ function handleDisconnect(socket: Socket): void {
     const orgRoomName = socketOrgRooms.get(socket.id);
 
     if (roomName) {
+        // Broadcast leave event to document room
+        socket.to(roomName).emit('user-left-document', { userId: user?.userId });
         logger.info(`User ${user?.email || 'unknown'} left room ${roomName}`);
     }
 
@@ -286,7 +288,40 @@ function handleJoinDocument(
 
     logger.info(`User ${user.email} joined document ${documentId}`);
 
-    socket.emit('joined-document', { documentId, roomName });
+    // Broadcast user presence to others in the document
+    socket.to(roomName).emit('user-joined-document', {
+        userId: user.userId,
+        email: user.email,
+        name: user.name || user.email,
+        avatar: user.avatar
+    });
+
+    // Get current users in the document room
+    const onlineUsers: any[] = [];
+    const room = io.sockets.adapter.rooms.get(roomName);
+
+    if (room) {
+        room.forEach((socketId) => {
+            const roomUser = socketUsers.get(socketId);
+            if (roomUser) {
+                onlineUsers.push({
+                    userId: roomUser.userId,
+                    email: roomUser.email,
+                    name: roomUser.name || roomUser.email,
+                    avatar: roomUser.avatar
+                });
+            }
+        });
+    }
+
+    // Deduplicate
+    const uniqueUsers = Array.from(new Map(onlineUsers.map(u => [u.userId, u])).values());
+
+    socket.emit('joined-document', {
+        documentId,
+        roomName,
+        onlineUsers: uniqueUsers
+    });
 }
 
 function handleDocumentUpdate(
