@@ -14,6 +14,8 @@ const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const database_1 = require("@collab/database");
 const logger = (0, logger_1.createLogger)('auth-service');
+console.log('Auth Service: Starting execution...');
+logger.info('Auth Service: Logger initialized');
 const app = (0, express_1.default)();
 const prisma = (0, database_1.getPrismaClient)();
 // Security middleware - temporarily disabled for debugging
@@ -53,8 +55,18 @@ app.use(BASE_PATH, auth_routes_1.default);
 app.use(error_middleware_1.errorHandler);
 const startServer = async () => {
     try {
-        logger.info('Connecting to database...');
-        await prisma.$connect();
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+            logger.error('CRITICAL: DATABASE_URL is not defined!');
+        }
+        else {
+            logger.info(`DATABASE_URL is defined (starts with: ${dbUrl.substring(0, 15)}...)`);
+        }
+        logger.info('Connecting to database (with 5s timeout)...');
+        // Race promise to timeout connection if it hangs
+        const connectionPromise = prisma.$connect();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timed out after 5000ms')), 5000));
+        await Promise.race([connectionPromise, timeoutPromise]);
         logger.info('Database connection established.');
         app.listen(config_1.config.port, () => {
             logger.info(`Auth Service running on port ${config_1.config.port}`);
@@ -73,7 +85,9 @@ const startServer = async () => {
         });
     }
     catch (error) {
-        logger.error('Failed to start server:', error);
+        logger.error(`Failed to start server: ${error.message}`);
+        logger.error(error.stack);
+        // We exit with 1 to let Render restart the service
         process.exit(1);
     }
 };

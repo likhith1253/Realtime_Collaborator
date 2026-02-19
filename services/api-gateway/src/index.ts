@@ -1,14 +1,35 @@
+console.log('API Gateway: Starting execution...');
+
 import express from 'express';
+console.log('API Gateway: Imports loaded (express)');
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { config } from './config';
+console.log('API Gateway: Config loaded');
 // @ts-ignore - Local module resolution
 import { createLogger } from '@packages/logger';
 
+console.log('API Gateway: Creating app...');
 const app = express();
 const logger = createLogger('api-gateway');
+
+// Connectivity Check Function
+const checkServiceHealth = async (name: string, url: string) => {
+    try {
+        logger.info(`Checking health of ${name} at ${url}/health...`);
+        const response = await fetch(`${url}/health`);
+        if (response.ok) {
+            logger.info(`✅ Connectivity Check: ${name} is UP (${response.status})`);
+        } else {
+            logger.warn(`⚠️ Connectivity Check: ${name} returned ${response.status}`);
+        }
+    } catch (error: any) {
+        logger.error(`❌ Connectivity Check: ${name} is DOWN. Error: ${error.message}`);
+    }
+};
+console.log('API Gateway: Logger created');
 
 // Middleware
 app.use(helmet());
@@ -21,6 +42,40 @@ app.use(morgan('dev'));
 // Health Check
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', service: 'api-gateway' });
+});
+
+// Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
+app.get('/debug-network', async (req, res) => {
+    const authUrl = config.services.auth.url;
+    const healthUrl = `${authUrl}/health`;
+
+    const results: any = {
+        config: {
+            authUrl: authUrl,
+            envUrl: process.env.AUTH_SERVICE_URL
+        },
+        tests: {}
+    };
+
+    try {
+        const start = Date.now();
+        const response = await fetch(healthUrl);
+        const duration = Date.now() - start;
+        results.tests.authService = {
+            status: 'UP',
+            httpStatus: response.status,
+            durationMs: duration,
+            statusText: response.statusText
+        };
+    } catch (error: any) {
+        results.tests.authService = {
+            status: 'DOWN',
+            error: error.message,
+            code: error.cause?.code || 'UNKNOWN'
+        };
+    }
+
+    res.json(results);
 });
 
 // AI Service Proxy
@@ -240,4 +295,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(config.port, () => {
     logger.info(`API Gateway running on port ${config.port}`);
     logger.info(`Proxying /auth -> ${config.services.auth.url}`);
+    logger.info(`Proxying /orgs -> ${config.services.org.url}`);
+    logger.info(`Proxying /collab -> ${config.services.collab.url}`);
+    logger.info(`Proxying /ai -> ${config.services.ai.url}`);
+    logger.info(`Proxying /documents -> ${config.services.docs.url}`);
+
+    // Perform initial connectivity checks
+    checkServiceHealth('Auth Service', config.services.auth.url);
+    checkServiceHealth('Org Service', config.services.org.url);
 });

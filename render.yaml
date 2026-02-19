@@ -38,7 +38,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npm run build -w services/auth-service
-    startCommand: npx prisma db push --accept-data-loss --schema=packages/database/prisma/schema.prisma && npm start -w services/auth-service
+    startCommand: npm start -w services/auth-service
     envVars:
       - key: PORT
         value: 10000

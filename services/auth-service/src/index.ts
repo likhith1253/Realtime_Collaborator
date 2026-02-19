@@ -11,14 +11,22 @@ import { errorHandler } from './middleware/error.middleware';
 import { getPrismaClient, disconnectPrisma } from '@collab/database';
 
 const logger = createLogger('auth-service');
+console.log('Auth Service: Starting execution...');
+logger.info('Auth Service: Logger initialized');
 
 const app = express();
 const prisma = getPrismaClient();
 
+// Pre-Middleware Logger - Log every single request hitting the server
+app.use((req, res, next) => {
+    logger.info(`[Incoming] ${req.method} ${req.url} from ${req.ip}`);
+    next();
+});
+
 // Security middleware - temporarily disabled for debugging
 // app.use(helmet());
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3004'],
+    origin: config.corsOrigin || '*', // Fallback to * for debugging if config missing
     credentials: true,
 }));
 
@@ -62,8 +70,23 @@ app.use(errorHandler);
 
 const startServer = async () => {
     try {
-        logger.info('Connecting to database...');
-        await prisma.$connect();
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+            logger.error('CRITICAL: DATABASE_URL is not defined!');
+        } else {
+            logger.info(`DATABASE_URL is defined (starts with: ${dbUrl.substring(0, 15)}...)`);
+        }
+
+        logger.info('Connecting to database (with 5s timeout)...');
+
+        // Race promise to timeout connection if it hangs
+        const connectionPromise = prisma.$connect();
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database connection timed out after 5000ms')), 5000)
+        );
+
+        await Promise.race([connectionPromise, timeoutPromise]);
+
         logger.info('Database connection established.');
 
         app.listen(config.port, () => {
@@ -82,8 +105,10 @@ const startServer = async () => {
                 });
             }
         });
-    } catch (error) {
-        logger.error('Failed to start server:', error);
+    } catch (error: any) {
+        logger.error(`Failed to start server: ${error.message}`);
+        logger.error(error.stack);
+        // We exit with 1 to let Render restart the service
         process.exit(1);
     }
 };

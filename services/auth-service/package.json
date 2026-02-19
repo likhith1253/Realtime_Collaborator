@@ -2,6 +2,9 @@
   "name": "auth-service",
   "version": "0.1.0",
   "description": "Authentication Service",
+  "engines": {
+    "node": ">=18"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

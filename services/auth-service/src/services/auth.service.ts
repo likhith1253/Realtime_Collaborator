@@ -11,9 +11,12 @@ const logger = createLogger('auth-service');
 
 export class AuthService {
     async register(data: SignupUser) {
+        logger.info(`[AuthService] register: Attempting registration for ${data.email}`);
+        logger.info('[AuthService] register: Checking for existing user...');
         const existingUser = await prisma.user.findFirst({
             where: { email: data.email },
         });
+        logger.info(`[AuthService] register: Existing user check complete. Found: ${!!existingUser}`);
 
         if (existingUser) {
             throw new Error('User already exists');
@@ -36,17 +39,22 @@ export class AuthService {
             }
         }
 
+        logger.info('[AuthService] register: Hashing password...');
         const hashedPassword = await bcrypt.hash(data.password, 10);
+        logger.info('[AuthService] register: Password hashed.');
 
         // Create an organization for the user
+        logger.info('[AuthService] register: Starting transaction to create user and organization...');
         const user = await prisma.$transaction(async (tx: any) => {
             const orgName = (data as any).organization_name || `${data.full_name}'s Organization`;
+            logger.info(`[AuthService] register: Creating organization '${orgName}'...`);
             const org = await tx.organization.create({
                 data: {
                     name: orgName,
                     slug: `${String(orgName).toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
                 }
             });
+            logger.info(`[AuthService] register: Organization created (${org.id}). Creating user...`);
 
             const newUser = await tx.user.create({
                 data: {
