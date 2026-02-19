@@ -105,6 +105,51 @@ export function onDocumentUpdate(
 }
 
 /**
+ * Listen for when this client joins a document (receives initial users).
+ */
+export function onJoinedDocument(
+    callback: (data: { documentId: string; roomName: string; onlineUsers: OnlineUser[] }) => void
+): () => void {
+    const s = getSocket();
+    if (!s) return () => { };
+
+    s.on('joined-document', callback);
+    return () => {
+        s.off('joined-document', callback);
+    };
+}
+
+/**
+ * Listen for other users joining the document.
+ */
+export function onUserJoinedDocument(
+    callback: (user: OnlineUser) => void
+): () => void {
+    const s = getSocket();
+    if (!s) return () => { };
+
+    s.on('user-joined-document', callback);
+    return () => {
+        s.off('user-joined-document', callback);
+    };
+}
+
+/**
+ * Listen for users leaving the document.
+ */
+export function onUserLeftDocument(
+    callback: (data: { userId: string }) => void
+): () => void {
+    const s = getSocket();
+    if (!s) return () => { };
+
+    s.on('user-left-document', callback);
+    return () => {
+        s.off('user-left-document', callback);
+    };
+}
+
+/**
  * Join a slide room for real-time collaboration.
  */
 export function joinSlide(slideId: string): void {
@@ -170,6 +215,7 @@ export interface OnlineUser {
     userId: string;
     email: string;
     name: string;
+    avatar?: string | null;
 }
 
 /**

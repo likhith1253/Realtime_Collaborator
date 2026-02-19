@@ -1,16 +1,29 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Check, Cloud, AlertCircle, Users, Copy } from 'lucide-react'
+import { Check, Cloud, AlertCircle, Users, Copy, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { OnlineUser } from '@/lib/socket'
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error'
 
-export function EditorToolbar() {
+interface EditorToolbarProps {
+  onBack?: () => void;
+  onlineUsers?: OnlineUser[];
+  documentTitle?: string;
+}
+
+export function EditorToolbar({ onBack, onlineUsers = [], documentTitle = 'Document' }: EditorToolbarProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
-  // Simulate save status changes
+  // Simulate save status changes (Todo: Connect to actual save state)
   const handleSave = () => {
     setSaveStatus('saving')
     setTimeout(() => {
@@ -18,6 +31,12 @@ export function EditorToolbar() {
       setLastSaved(new Date())
     }, 500)
   }
+
+  const handleShare = () => {
+    const subject = encodeURIComponent(`Collaboration Invite: ${documentTitle}`);
+    const body = encodeURIComponent(`I'm inviting you to collaborate on this document.\n\nOpen here: ${window.location.href}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
 
   // Handle Ctrl+S / Cmd+S
   useEffect(() => {
@@ -67,39 +86,63 @@ export function EditorToolbar() {
   return (
     <div className="border-b border-border bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between px-6 py-3">
-        {/* Left: Save Status */}
-        <div className="flex items-center gap-2">
-          {getSaveStatusIcon()}
-          <span className="text-sm text-muted-foreground">
-            {getSaveStatusLabel()}
-          </span>
+        {/* Left: Back & Save Status */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onBack} title="Back to Dashboard">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div className="h-4 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            {getSaveStatusIcon()}
+            <span className="text-sm text-muted-foreground">
+              {getSaveStatusLabel()}
+            </span>
+          </div>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            className="gap-2"
-          >
-            <Cloud className="w-4 h-4" />
-            Save
-          </Button>
+          {/* Collaborators Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+              >
+                <Users className="w-4 h-4" />
+                <span className="text-xs">{onlineUsers.length} collaborator{onlineUsers.length !== 1 ? 's' : ''}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-60" align="end">
+              <div className="space-y-2">
+                <h4 className="font-medium leading-none mb-2">Active Users</h4>
+                <ScrollArea className="h-[200px]">
+                  {onlineUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-2">No active users.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {onlineUsers.map((user) => (
+                        <div key={user.userId} className="flex items-center gap-2 text-sm p-1 rounded hover:bg-muted">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <div className="flex flex-col overflow-hidden">
+                            <span className="font-medium truncate">{user.name}</span>
+                            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <Button
             variant="ghost"
             size="sm"
             className="gap-2"
-          >
-            <Users className="w-4 h-4" />
-            <span className="text-xs">2 collaborators</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2"
+            onClick={handleShare}
           >
             <Copy className="w-4 h-4" />
             Share

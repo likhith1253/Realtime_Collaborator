@@ -3,12 +3,17 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { EditorToolbar } from './toolbar'
 import { AIPanel } from './ai-panel'
+import { useRouter } from 'next/navigation'
 import {
   getSocket,
   disconnectSocket,
   joinDocument,
   emitDocumentUpdate,
   onDocumentUpdate,
+  onJoinedDocument,
+  onUserJoinedDocument,
+  onUserLeftDocument,
+  OnlineUser
 } from '@/lib/socket'
 
 interface DocumentEditorProps {
@@ -24,11 +29,13 @@ export function DocumentEditor({
   initialContent = '',
   onSave,
 }: DocumentEditorProps) {
+  const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
   const [isTitleFocused, setIsTitleFocused] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
 
   // Track if content has changed
   const hasChanges = useRef(false)
@@ -88,9 +95,28 @@ export function DocumentEditor({
       }
     })
 
+    // Listen for presence events
+    const cleanupJoined = onJoinedDocument((data) => {
+      setOnlineUsers(data.onlineUsers)
+    })
+
+    const cleanupUserJoined = onUserJoinedDocument((user) => {
+      setOnlineUsers(prev => {
+        if (prev.find(u => u.userId === user.userId)) return prev
+        return [...prev, user]
+      })
+    })
+
+    const cleanupUserLeft = onUserLeftDocument((data) => {
+      setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId))
+    })
+
     return () => {
       cleanupListeners()
       cleanupUpdates()
+      cleanupJoined()
+      cleanupUserJoined()
+      cleanupUserLeft()
       if (emitTimeoutRef.current) {
         clearTimeout(emitTimeoutRef.current)
       }
@@ -172,7 +198,11 @@ export function DocumentEditor({
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <EditorToolbar />
+      <EditorToolbar
+        onBack={() => router.push('/')}
+        onlineUsers={onlineUsers}
+        documentTitle={title}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Main Editor */}
