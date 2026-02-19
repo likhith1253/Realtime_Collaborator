@@ -46,6 +46,7 @@ app.get('/health', (req, res) => {
 
 // Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
 // Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
+// Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
 app.get('/debug-network', async (req, res) => {
     const services = [
         { key: 'auth', name: 'Auth Service', url: config.services.auth.url },
@@ -66,31 +67,40 @@ app.get('/debug-network', async (req, res) => {
         tests: {}
     };
 
-    for (const svc of services) {
+    // Run connection tests in parallel with a short timeout
+    await Promise.all(services.map(async (svc) => {
         try {
             const start = Date.now();
-            // Some services might not have a /health endpoint exposed or working, but we try standard
             const healthUrl = `${svc.url}/health`;
-            const response = await fetch(healthUrl);
-            const duration = Date.now() - start;
-            results.tests[svc.key] = {
-                name: svc.name,
-                url: svc.url, // Show the URL being used
-                status: response.ok ? 'UP' : 'WARN',
-                httpStatus: response.status,
-                durationMs: duration,
-                statusText: response.statusText
-            };
+
+            // 3 second timeout using AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            try {
+                const response = await fetch(healthUrl, { signal: controller.signal });
+                const duration = Date.now() - start;
+                results.tests[svc.key] = {
+                    name: svc.name,
+                    url: svc.url,
+                    status: response.ok ? 'UP' : 'WARN',
+                    httpStatus: response.status,
+                    durationMs: duration,
+                    statusText: response.statusText
+                };
+            } finally {
+                clearTimeout(timeoutId);
+            }
         } catch (error: any) {
             results.tests[svc.key] = {
                 name: svc.name,
                 url: svc.url,
                 status: 'DOWN',
-                error: error.message,
+                error: error.name === 'AbortError' ? 'Timeout (3000ms)' : error.message,
                 code: error.cause?.code || 'UNKNOWN'
             };
         }
-    }
+    }));
 
     res.json(results);
 });
