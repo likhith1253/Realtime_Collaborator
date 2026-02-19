@@ -45,34 +45,51 @@ app.get('/health', (req, res) => {
 });
 
 // Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
+// Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
 app.get('/debug-network', async (req, res) => {
-    const authUrl = config.services.auth.url;
-    const healthUrl = `${authUrl}/health`;
+    const services = [
+        { key: 'auth', name: 'Auth Service', url: config.services.auth.url },
+        { key: 'org', name: 'Org Service', url: config.services.org.url },
+        { key: 'collab', name: 'Collab Service', url: config.services.collab.url },
+        { key: 'docs', name: 'Docs Service', url: config.services.docs.url },
+        { key: 'ai', name: 'AI Service', url: config.services.ai.url },
+    ];
 
     const results: any = {
         config: {
-            authUrl: authUrl,
-            envUrl: process.env.AUTH_SERVICE_URL
+            authUrl: config.services.auth.url,
+            orgUrl: config.services.org.url,
+            collabUrl: config.services.collab.url,
+            docsUrl: config.services.docs.url,
+            aiUrl: config.services.ai.url,
         },
         tests: {}
     };
 
-    try {
-        const start = Date.now();
-        const response = await fetch(healthUrl);
-        const duration = Date.now() - start;
-        results.tests.authService = {
-            status: 'UP',
-            httpStatus: response.status,
-            durationMs: duration,
-            statusText: response.statusText
-        };
-    } catch (error: any) {
-        results.tests.authService = {
-            status: 'DOWN',
-            error: error.message,
-            code: error.cause?.code || 'UNKNOWN'
-        };
+    for (const svc of services) {
+        try {
+            const start = Date.now();
+            // Some services might not have a /health endpoint exposed or working, but we try standard
+            const healthUrl = `${svc.url}/health`;
+            const response = await fetch(healthUrl);
+            const duration = Date.now() - start;
+            results.tests[svc.key] = {
+                name: svc.name,
+                url: svc.url, // Show the URL being used
+                status: response.ok ? 'UP' : 'WARN',
+                httpStatus: response.status,
+                durationMs: duration,
+                statusText: response.statusText
+            };
+        } catch (error: any) {
+            results.tests[svc.key] = {
+                name: svc.name,
+                url: svc.url,
+                status: 'DOWN',
+                error: error.message,
+                code: error.cause?.code || 'UNKNOWN'
+            };
+        }
     }
 
     res.json(results);
