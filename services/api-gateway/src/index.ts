@@ -109,14 +109,7 @@ app.get('/debug-network', async (req, res) => {
 app.use('/ai', createProxyMiddleware({
     target: config.services.ai.url,
     changeOrigin: true,
-    pathRewrite: {
-        '^/ai': '', // Remove /ai prefix if the service expects root paths, BUT wait, checking previous code...
-        // Previous code: `${config.services.ai.url}${req.originalUrl}`.
-        // req.originalUrl includes /ai/chat.
-        // If service url is http://127.0.0.1:8001, then target is http://127.0.0.1:8001/ai/chat.
-        // So we do NOT rewrite path unless the service is mounted at root.
-        // Let's assume NO rewrite based on manual fetch logic which appended originalUrl.
-    },
+    // Do not rewrite path, the AI service expects /ai/chat
     onProxyReq: (proxyReq, req, res) => {
         logger.info(`Proxying AI Request: ${req.method} ${req.originalUrl} -> ${config.services.ai.url}`);
     },
