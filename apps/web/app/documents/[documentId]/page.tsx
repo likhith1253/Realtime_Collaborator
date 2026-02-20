@@ -70,6 +70,7 @@ export default function DocumentPage() {
   return (
     <DocumentEditor
       documentId={documentId}
+      projectId={document.project_id}
       initialTitle={document.title}
       initialContent={document.content || ''}
       onSave={handleSave}

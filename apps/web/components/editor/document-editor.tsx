@@ -3,7 +3,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { EditorToolbar } from './toolbar'
 import { AIPanel } from './ai-panel'
+import { ChatPanel } from './chat-panel'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
 import {
   getSocket,
   disconnectSocket,
@@ -18,6 +20,7 @@ import {
 
 interface DocumentEditorProps {
   documentId?: string
+  projectId?: string
   initialTitle?: string
   initialContent?: string
   onSave?: (title: string, content: string) => Promise<void>
@@ -25,17 +28,22 @@ interface DocumentEditorProps {
 
 export function DocumentEditor({
   documentId,
+  projectId,
   initialTitle = 'Untitled Document',
   initialContent = '',
   onSave,
 }: DocumentEditorProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
   const [isTitleFocused, setIsTitleFocused] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+
+  // Panel State: 'ai' | 'chat' | 'none'
+  const [activePanel, setActivePanel] = useState<'ai' | 'chat'>('ai')
 
   // Track if content has changed
   const hasChanges = useRef(false)
@@ -202,6 +210,9 @@ export function DocumentEditor({
         onBack={() => router.push('/')}
         onlineUsers={onlineUsers}
         documentTitle={title}
+        currentUserId={user?.id}
+        activePanel={activePanel}
+        onTogglePanel={(panel) => setActivePanel(panel)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -249,31 +260,29 @@ export function DocumentEditor({
           </div>
         </div>
 
-        {/* Right Panel - AI Assistant */}
-        <AIPanel
-          documentContent={content}
-          onUpdateContent={(newContent) => {
-            setContent(newContent)
-            // Trigger socket emit
-            if (documentId) {
-              lastEmittedContent.current = newContent
-              emitDocumentUpdate(documentId, newContent)
-              // Also trigger auto-save if needed, but the effect hook on [content] should handle it.
-              // Actually the useEffect on [content] handles debounced save.
-              // It also handles socket emit but with debounce. 
-              // If we want immediate socket emit we can do it here or let the effect handle it.
-              // The handleContentChange does it with debounce.
-              // Let's reuse the logic or just let the setContent trigger the effect... 
-              // Wait, the effect on [title, content] (lines 122-140) handles AUTO-SAVE (REST).
-              // The socket emit is inside handleContentChange (lines 153-170).
-              // So if I just setContent, socket won't emit unless I duplicate that logic.
-              // Let's duplicate the socket emit logic here for immediate update.
+        {/* Right Panel - AI Assistant or Chat */}
+        {activePanel === 'ai' ? (
+          <AIPanel
+            documentContent={content}
+            onUpdateContent={(newContent) => {
+              setContent(newContent)
+              // Trigger socket emit
+              if (documentId) {
+                lastEmittedContent.current = newContent
+                emitDocumentUpdate(documentId, newContent)
 
-              if (emitTimeoutRef.current) clearTimeout(emitTimeoutRef.current)
-              emitDocumentUpdate(documentId, newContent)
-            }
-          }}
-        />
+                if (emitTimeoutRef.current) clearTimeout(emitTimeoutRef.current)
+                emitDocumentUpdate(documentId, newContent)
+              }
+            }}
+          />
+        ) : projectId ? (
+          <ChatPanel projectId={projectId} />
+        ) : (
+          <div className="w-80 border-l border-border bg-muted/20 flex items-center justify-center p-4 text-center">
+            <p className="text-sm text-muted-foreground">Chat unavailable (No Project ID)</p>
+          </div>
+        )}
       </div>
     </div>
   )
