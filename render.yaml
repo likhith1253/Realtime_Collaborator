@@ -18,19 +18,14 @@ services:
       - key: CORS_ORIGIN
         sync: false # User must provide their Vercel frontend URL here
       - key: AUTH_SERVICE_URL
-        sync: false
         value: http://auth-service:10000
       - key: ORG_SERVICE_URL
-        sync: false
         value: http://organization-service:10000
       - key: COLLAB_SERVICE_URL
-        sync: false
         value: http://collab-service:10000
       - key: DOCS_SERVICE_URL
-        sync: false
         value: http://document-service:10000
       - key: AI_SERVICE_URL
-        sync: false
         value: http://ai-service:10000 # Optional if AI service exists
 
   # --------------------------------------------------------------------------------
@@ -165,7 +160,7 @@ services:
     plan: free
     rootDir: services/ai-service
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.main:app --host 0.0.0.0 --port 
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: 10000
