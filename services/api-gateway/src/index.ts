@@ -34,7 +34,7 @@ console.log('API Gateway: Logger created');
 // Middleware
 app.use(helmet());
 app.use(cors({
-    origin: config.cors.origin,
+    origin: true,
     credentials: true
 }));
 app.use(morgan('dev'));

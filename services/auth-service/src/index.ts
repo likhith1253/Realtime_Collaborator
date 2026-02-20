@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 // Security middleware - temporarily disabled for debugging
 // app.use(helmet());
 app.use(cors({
-    origin: config.corsOrigin || '*', // Fallback to * for debugging if config missing
+    origin: true,
     credentials: true,
 }));
 

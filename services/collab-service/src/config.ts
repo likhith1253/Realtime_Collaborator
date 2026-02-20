@@ -4,12 +4,13 @@ import path from 'path';
 // Ensure .env is loaded from the collab-service folder regardless of CWD
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const getEnv = (key: string): string => {
-    const value = process.env[key];
-    if (!value) {
-        throw new Error(`❌ Missing required environment variable: ${key}`);
+const getEnv = (key: string, defaultValue?: string): string => {
+    const value = process.env[key] || defaultValue;
+    if (!value && defaultValue === undefined) {
+        console.warn(`⚠️ Warning: Missing environment variable: ${key}`);
+        return '';
     }
-    return value;
+    return value || '';
 };
 
 export const config = {
