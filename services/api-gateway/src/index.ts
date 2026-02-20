@@ -107,7 +107,8 @@ app.get('/debug-network', async (req, res) => {
 
 // AI Service Proxy
 app.use('/ai', createProxyMiddleware({
-    target: config.services.ai.url,
+    // Target must include /ai since express mounts it there and strips it from the forwarded path
+    target: `${config.services.ai.url}/ai`,
     changeOrigin: true,
     // Do not rewrite path, the AI service expects /ai/chat
     onProxyReq: (proxyReq, req, res) => {
