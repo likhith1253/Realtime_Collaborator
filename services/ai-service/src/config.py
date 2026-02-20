@@ -1,13 +1,15 @@
 import os
 from pydantic_settings import BaseSettings
 
+from typing import Optional
+
 class Settings(BaseSettings):
     app_name: str = "AI Service"
     port: int = 8001
     environment: str = "development"
     
     # Required variables (no default value = raises error if missing)
-    gemini_api_key: str
+    gemini_api_key: Optional[str] = None
     
     # Optional with defaults
     cors_origin: str = "http://localhost:3000"

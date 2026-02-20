@@ -36,7 +36,12 @@ export function DocumentEditor({
   const router = useRouter()
   const { user } = useAuth()
   const [title, setTitle] = useState(initialTitle)
-  const [content, setContent] = useState(initialContent)
+  const [content, setContent] = useState(() => {
+    // Sanitize any null characters from the initial load
+    return (initialContent || '')
+      .replace(/\0/g, '')
+      .replace(/\\u0000/g, '')
+  })
   const [isTitleFocused, setIsTitleFocused] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -98,6 +103,8 @@ export function DocumentEditor({
             .replace(/\\n/g, '\n')
             .replace(/\\"/g, '"')
             .replace(/\\\\/g, '\\')
+            .replace(/\0/g, '')
+            .replace(/\\u0000/g, '')
         }
         setContent(cleanContent)
       }
