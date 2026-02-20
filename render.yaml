@@ -155,6 +155,25 @@ services:
       - key: SMTP_PASS
         sync: false
 
+  # --------------------------------------------------------------------------------
+  # 6. AI SERVICE
+  # Python backend using Gemini API for AI features.
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: ai-service
+    env: python
+    plan: free
+    rootDir: services/ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port 
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+
 # --------------------------------------------------------------------------------
 # DATABASE
 # Managed PostgreSQL database.
