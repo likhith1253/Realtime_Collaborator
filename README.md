@@ -43,6 +43,14 @@ Our distributed architecture routes all client communication through a central A
 
 ---
 
+## 💻 Visual Tour
+
+| Home Dashboard | Editor Interface | Payment Gateway |
+|:---:|:---:|:---:|
+| ![Dashboard](docs/images/screenshot_home.png) | ![Editor](docs/images/editor_view.png) | ![Payment Gateway](docs/images/payment_page.png) |
+
+---
+
 ## 🛠️ Technology Stack
 
 | Ecosystem | Primary Technologies |
