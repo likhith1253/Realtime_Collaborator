@@ -43,16 +43,6 @@ Our distributed architecture routes all client communication through a central A
 
 ---
 
-## 💻 Visual Tour
-
-| Home Dashboard | Editor Interface | Payment Gateway |
-|:---:|:---:|:---:|
-| ![Dashboard](docs/images/screenshot_home.png) | ![Editor](docs/images/editor_view.png) | ![Payment Gateway](docs/images/payment_page.png) |
-
-*(Screenshot files to be added to `docs/images/` to render successfully)*
-
----
-
 ## 🛠️ Technology Stack
 
 | Ecosystem | Primary Technologies |
@@ -136,7 +126,7 @@ Realtime_Collaborator/
 
 ## 🔮 Future Roadmap
 
-- **Stripe Billing Integration Pipeline:** Finalize frontend checkout sessions bound to the organization billing tracking tables.
+- **Stripe Frontend Integration:** The backend Stripe integration endpoints are already built into the `organization-service`. The next step is building the frontend UI Checkout session component to connect with these endpoints.
 - **Offline-First Editing:** Utilize IndexedDB to persist local Yjs vectors while offline, merging gracefully upon internet reconnection.
 - **Rich Text AI:** Advancing the AI service to construct heavily formatted blocks recursively (headings, lists, inline styling) natively bypassing plain text.
 
