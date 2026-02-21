@@ -29,35 +29,36 @@ export const errorHandler = (
     res: Response,
     next: NextFunction
 ) => {
-    // Determine status code and message
-    let status = 500;
-    let message = 'An unexpected error occurred';
-    let code = 'INTERNAL_ERROR';
-    let details: Record<string, unknown> | undefined = undefined;
+    logger.error('Error caught by middleware:', err);
 
     if (err instanceof AppError) {
+        const response: ErrorResponse = {
+            success: false,
+            error: {
+                code: err.code || 'API_ERROR',
+                message: err.message
+            }
+        };
+        res.status(err.statusCode).json(response);
+        return;
     }
+
+    // Handle unknown errors (programming errors, etc.)
+    const response: ErrorResponse = {
+        success: false,
+        error: {
+            code: 'INTERNAL_ERROR',
+            message: 'An unexpected error occurred'
+        }
+    };
+
+    // In development, include the actual error message
+    if (process.env.NODE_ENV === 'development') {
+        response.error.details = { originalMessage: err.message };
+    }
+
+    res.status(500).json(response);
 };
-res.status(err.statusCode).json(response);
-return;
-    }
-
-// Handle unknown errors (programming errors, etc.)
-const response: ErrorResponse = {
-    success: false,
-    error: {
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred'
-    }
-};
-
-// In development, include the actual error message
-if (process.env.NODE_ENV === 'development') {
-    response.error.details = { originalMessage: err.message };
-}
-
-res.status(500).json(response);
-}
 
 /**
  * Async handler wrapper to catch errors from async route handlers
