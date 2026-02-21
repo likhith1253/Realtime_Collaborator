@@ -5,9 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="#key-features"><strong>Features</strong></a> ·
-  <a href="#system-architecture"><strong>Architecture</strong></a> ·
-  <a href="#quick-start"><strong>Quick Start</strong></a> ·
+  <a href="docs/features.md"><strong>Features</strong></a> ·
+  <a href="docs/architecture.md"><strong>Architecture</strong></a> ·
+  <a href="docs/setup.md"><strong>Quick Start</strong></a> ·
   <a href="#technology-stack"><strong>Tech Stack</strong></a>
 </p>
 
@@ -37,59 +37,29 @@ Our distributed architecture routes all client communication through a central A
 
 ```mermaid
 graph TD
-    %% Define boundaries
-    subgraph Client [Client Side]
-        Browser[Next.js Frontend]
-        Mobile[Mobile Progressive Web App]
-    end
+    %% User and Edge
+    User([End User]) <-->|HTTPS/WebSocket| Frontend[Next.js Web App]
+    Frontend <-->|HTTPS/WebSocket| Gateway[API Gateway]
 
-    %% API Gateway Layer
-    subgraph Gateway [API Gateway Layer]
-        APIGateway(Node.js API Gateway Proxy)
-        AuthMW[JWT Authentication Middleware]
-    end
+    %% Microservices Routing
+    Gateway -->|/auth| Auth[Auth Service]
+    Gateway -->|/orgs & /billing| Org[Organization Service]
+    Gateway -->|/documents & /projects| Doc[Document Service]
+    Gateway <-->|/socket.io| Collab[Collaboration Service]
+    Gateway -->|/ai| AI[AI Service]
 
-    %% Internal Microservices Cluster
-    subgraph Backend Services [Internal Microservices Cluster]
-        AuthService[Auth Service]
-        OrgService[Organization Service]
-        DocService[Document Service]
-        CollabService((Collab Service<br>Socket.io/Yjs))
-        AIService[AI Service<br>FastAPI Python]
-    end
+    %% Internal Services Logic
+    Collab <-->|Flushes state| Doc
+    AI -->|Generates Content| ExternalAI([Google Gemini API])
+    Org -->|Tracks Subscriptions| Stripe([Stripe API])
 
-    %% External Systems & Storage
-    subgraph Storage [Persistence Layer]
-        DB[(PostgreSQL Database)]
-        Prisma[Prisma ORM]
-    end
-    
-    subgraph External [External Services]
-        Gemini((Google Gemini<br>Generative API))
-        Stripe((Stripe Billing<br>Payments))
-    end
+    %% Database Ties
+    Auth -.-> DB[(PostgreSQL Database)]
+    Org -.-> DB
+    Doc -.-> DB
 
-    %% Relationships and Data flow
-    Browser & Mobile --HTTPS/WSS--> APIGateway
-    
-    APIGateway --> AuthMW
-    AuthMW --> AuthService
-    AuthMW --> OrgService
-    AuthMW --> DocService
-    AuthMW --> CollabService
-    AuthMW --> AIService
-    
-    CollabService -.CRDT Sync.-> DocService
-    
-    OrgService -.-> Stripe
-    AIService -.-> Gemini
-    
-    AuthService & OrgService & DocService --> Prisma
-    Prisma --> DB
-    
-    %% Styling
-    classDef primary fill:#f9f,stroke:#333,stroke-width:2px;
-    class CollabService,AIService primary;
+    classDef specific fill:#f9f,stroke:#333,stroke-width:2px;
+    class ExternalAI,Stripe specific;
 ```
 
 > **Note:** Detailed sequence diagrams and component breakdowns are available in the [`docs/`](docs/) directory.
