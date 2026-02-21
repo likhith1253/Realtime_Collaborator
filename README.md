@@ -21,7 +21,7 @@ Built on a modern microservices architecture, this application solves the proble
 
 ---
 
-## ✨ Key Features
+## <a id="key-features"></a>✨ Key Features
 
 - ⚡ **Real-Time Collaboration:** Sub-millisecond latent document synchronization powered by WebSockets and CRDTs (Yjs).
 - 🤖 **AI-Powered Assistance:** Context-aware text generation, summarization, and autocomplete using Google Gemini.
@@ -31,7 +31,7 @@ Built on a modern microservices architecture, this application solves the proble
 
 ---
 
-## 🏗️ System Architecture
+## <a id="system-architecture"></a>🏗️ System Architecture
 
 Our distributed architecture routes all client communication through a central API Gateway into specialized microservices, isolating concerns such as real-time sync, authentication, document storage, and AI processing.
 
@@ -51,7 +51,7 @@ Our distributed architecture routes all client communication through a central A
 
 ---
 
-## 🛠️ Technology Stack
+## <a id="technology-stack"></a>🛠️ Technology Stack
 
 | Ecosystem | Primary Technologies |
 |---|---|
@@ -63,7 +63,7 @@ Our distributed architecture routes all client communication through a central A
 
 ---
 
-## 🚀 Quick Start
+## <a id="quick-start"></a>🚀 Quick Start
 
 ### 1. Prerequisites
 - **Node.js** (v18+)
