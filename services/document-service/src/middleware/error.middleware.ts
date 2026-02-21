@@ -23,48 +23,40 @@ interface ErrorResponse {
  * Express error handling middleware
  * Converts all errors to standardized API response format
  */
-export function errorHandler(
-    err: Error,
+export const errorHandler = (
+    err: any,
     req: Request,
     res: Response,
     next: NextFunction
-): void {
-    // Log the error
-    logger.error('Error occurred:', {
-        message: err.message,
-        stack: err.stack,
-        path: req.path,
-        method: req.method
-    });
+) => {
+    // Determine status code and message
+    let status = 500;
+    let message = 'An unexpected error occurred';
+    let code = 'INTERNAL_ERROR';
+    let details: Record<string, unknown> | undefined = undefined;
 
-    // Handle known operational errors
     if (err instanceof AppError) {
-        const response: ErrorResponse = {
-            success: false,
-            error: {
-                code: err.code,
-                message: err.message
-            }
-        };
-        res.status(err.statusCode).json(response);
-        return;
+    }
+};
+res.status(err.statusCode).json(response);
+return;
     }
 
-    // Handle unknown errors (programming errors, etc.)
-    const response: ErrorResponse = {
-        success: false,
-        error: {
-            code: 'INTERNAL_ERROR',
-            message: 'An unexpected error occurred'
-        }
-    };
-
-    // In development, include the actual error message
-    if (process.env.NODE_ENV === 'development') {
-        response.error.details = { originalMessage: err.message };
+// Handle unknown errors (programming errors, etc.)
+const response: ErrorResponse = {
+    success: false,
+    error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred'
     }
+};
 
-    res.status(500).json(response);
+// In development, include the actual error message
+if (process.env.NODE_ENV === 'development') {
+    response.error.details = { originalMessage: err.message };
+}
+
+res.status(500).json(response);
 }
 
 /**
