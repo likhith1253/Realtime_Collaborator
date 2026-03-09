@@ -31,14 +31,7 @@ const allowedOrigins = [
     'http://localhost:3005'
 ].filter(Boolean);
 app.use((0, cors_1.default)({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        }
-        else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: true, // Reflect request origin allowed - Gateway handles actual security
     credentials: true,
 }));
 // Request parsing

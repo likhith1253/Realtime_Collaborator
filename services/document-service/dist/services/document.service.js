@@ -104,15 +104,23 @@ async function getDocument(documentId, userId) {
     if (!document) {
         throw new errors_1.DocumentNotFoundError();
     }
-    // Update last_accessed_at
-    await prisma.document.update({
-        where: { id: documentId },
-        data: { last_accessed_at: new Date() }
-    });
+    let contentStr = '';
+    if (document.yjs_binary_state) {
+        contentStr = document.yjs_binary_state.toString('utf8');
+        // If it starts and ends with quotes, it was JSON.stringified
+        if (contentStr.startsWith('"') && contentStr.endsWith('"')) {
+            try {
+                contentStr = JSON.parse(contentStr);
+            }
+            catch (e) {
+                // Keep as is if parsing fails
+            }
+        }
+    }
     return {
         id: document.id,
         title: document.title,
-        content: document.yjs_binary_state?.toString('utf8') || '',
+        content: contentStr,
         projectId: document.project_id,
         updatedAt: document.updated_at.toISOString()
     };
@@ -133,8 +141,12 @@ async function updateDocument(documentId, userId, updates) {
         data.title = updates.title;
     }
     if (updates.content !== undefined) {
-        // Store content as buffer for non-realtime operations
-        data.yjs_binary_state = Buffer.from(JSON.stringify(updates.content), 'utf8');
+        // Store content as buffer for non-realtime operations. Avoid double-stringifying strings.
+        const contentStr = typeof updates.content === 'string'
+            ? updates.content
+            : JSON.stringify(updates.content);
+        // Remove null bytes before saving
+        data.yjs_binary_state = Buffer.from(contentStr.replace(/\u0000/g, ''), 'utf8');
     }
     const document = await prisma.document.update({
         where: { id: documentId },

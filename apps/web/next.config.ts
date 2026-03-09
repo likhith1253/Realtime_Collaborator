@@ -26,22 +26,31 @@ if (missingEnvs.length > 0) {
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    // ⚠️ Prevent infinite loops on Vercel by not rewriting to localhost in production.
+    // In production, the frontend should either call the backend directly (CORS),
+    // or rewrites should point to the actual production backend URL.
+    const isProd = process.env.NODE_ENV === 'production';
+    const backendUrl = process.env.BACKEND_API_URL || (isProd ? '' : 'http://localhost:8000');
+
+    // If we're in prod and no specific backend URL for proxying is provided, skip rewrites
+    // This assumes NEXT_PUBLIC_API_URL is set to the true backend (e.g. Render) directly.
+    if (isProd && !process.env.BACKEND_API_URL) {
+      return [];
+    }
+
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/:path*',
+        destination: `${backendUrl}/:path*`,
       },
-      // Proxy canvas requests specifically if not covered by api prefix (though our client uses /canvas...)
-      // But wait, client uses API_BASE_URL + /canvas...
-      // If API_BASE_URL is 3005, then client calls 3005 directly (CORS needed).
-      // If API_BASE_URL is 3000 (proxy), then we need a rewrite for /canvas too.
       {
         source: '/canvas/:path*',
-        destination: 'http://localhost:8000/canvas/:path*',
+        destination: `${backendUrl}/canvas/:path*`,
       },
       {
         source: '/auth/:path*',
-        destination: 'http://localhost:3001/auth/:path*',
+        // Auth rewrite can point to the auth service directly if needed, but normally gateway handles it
+        destination: `${process.env.BACKEND_AUTH_URL || (isProd ? backendUrl : 'http://localhost:3001')}/auth/:path*`,
       },
     ]
   },
