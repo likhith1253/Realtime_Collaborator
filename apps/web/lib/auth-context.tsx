@@ -176,12 +176,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     setError(null)
     try {
+      console.log('[AuthContext] Attempting registration to:', '/auth/register')
+      console.log('[AuthContext] Request body:', { email, full_name: fullName, organization_name: organizationName, inviteToken })
+
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiBase}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, full_name: fullName, organization_name: organizationName, inviteToken }),
       })
+
+      console.log('[AuthContext] Registration response status:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -228,11 +233,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set user
       setUser(mapUserResponse(data.user))
     } catch (err) {
+      console.error('[AuthContext] Registration failed:', err)
       const message = err instanceof Error ? err.message : 'Registration failed'
       setError(message)
       throw err
     } finally {
       setLoading(false)
+      console.log('[AuthContext] Registration finished')
     }
   }
 
