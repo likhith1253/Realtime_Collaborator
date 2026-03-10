@@ -65,8 +65,15 @@ app.get('/debug-network', async (req, res) => {
         tests: {}
     };
 
-    // Run connection tests in parallel with a short timeout
-    await Promise.all(services.map(async (svc) => {
+    // Run connection tests sequentially with a stagger to avoid Render 429 DDoS protection
+    for (let i = 0; i < services.length; i++) {
+        const svc = services[i];
+
+        // Add a 500ms delay between requests (except the first one)
+        if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
         try {
             const start = Date.now();
             // Use specific endpoints for health check if available, otherwise just root
@@ -100,7 +107,7 @@ app.get('/debug-network', async (req, res) => {
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             };
         }
-    }));
+    }
 
     res.json(results);
 });
@@ -319,8 +326,11 @@ app.listen(config.port, () => {
     logger.info(`Proxying /ai -> ${config.services.ai.url}`);
     logger.info(`Proxying /documents -> ${config.services.docs.url}`);
 
-    // Perform initial connectivity checks
-    checkServiceHealth('Auth Service', config.services.auth.url);
-    checkServiceHealth('Org Service', config.services.org.url);
+    // Perform initial connectivity checks with a stagger
+    setTimeout(() => checkServiceHealth('Auth Service', config.services.auth.url), 1000);
+    setTimeout(() => checkServiceHealth('Org Service', config.services.org.url), 2000);
+    setTimeout(() => checkServiceHealth('Collab Service', config.services.collab.url), 3000);
+    setTimeout(() => checkServiceHealth('AI Service', config.services.ai.url), 4000);
+    setTimeout(() => checkServiceHealth('Docs Service', config.services.docs.url), 5000);
 });
 
