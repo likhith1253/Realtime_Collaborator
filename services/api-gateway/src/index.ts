@@ -69,9 +69,9 @@ app.get('/debug-network', async (req, res) => {
     for (let i = 0; i < services.length; i++) {
         const svc = services[i];
 
-        // Add a 500ms delay between requests (except the first one)
+        // Add a 1000ms delay between requests (except the first one) to bypass Render Rate Limit
         if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         try {
@@ -114,7 +114,7 @@ app.get('/debug-network', async (req, res) => {
 
 // AI Service Proxy
 app.use('/ai', createProxyMiddleware({
-    target: `${config.services.ai.url}/ai`,
+    target: config.services.ai.url,
     changeOrigin: true,
     on: {
         proxyReq: (proxyReq, req, res) => {
