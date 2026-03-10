@@ -114,11 +114,8 @@ app.get('/debug-network', async (req, res) => {
 
 // AI Service Proxy
 app.use('/ai', createProxyMiddleware({
-    target: config.services.ai.url,
+    target: `${config.services.ai.url}/ai`,
     changeOrigin: true,
-    pathRewrite: {
-        '^/ai': '/ai', // Explicitly rewrite to include /ai, as FastAPI expects /ai/chat
-    },
     on: {
         proxyReq: (proxyReq, req, res) => {
             logger.info(`Proxying AI Request: ${req.method} ${req.originalUrl} -> ${config.services.ai.url}`);
