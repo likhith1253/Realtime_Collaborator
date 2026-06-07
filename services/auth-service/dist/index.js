@@ -18,10 +18,15 @@ console.log('Auth Service: Starting execution...');
 logger.info('Auth Service: Logger initialized');
 const app = (0, express_1.default)();
 const prisma = (0, database_1.getPrismaClient)();
+// Pre-Middleware Logger - Log every single request hitting the server
+app.use((req, res, next) => {
+    logger.info(`[Incoming] ${req.method} ${req.url} from ${req.ip}`);
+    next();
+});
 // Security middleware - temporarily disabled for debugging
 // app.use(helmet());
 app.use((0, cors_1.default)({
-    origin: ['http://localhost:3000', 'http://localhost:3004'],
+    origin: true,
     credentials: true,
 }));
 // Body parsing
@@ -57,17 +62,32 @@ const startServer = async () => {
     try {
         const dbUrl = process.env.DATABASE_URL;
         if (!dbUrl) {
-            logger.error('CRITICAL: DATABASE_URL is not defined!');
+            logger.error('CRITICAL: DATABASE_URL is not defined! Service cannot start.');
+            process.exit(1);
         }
-        else {
-            logger.info(`DATABASE_URL is defined (starts with: ${dbUrl.substring(0, 15)}...)`);
+        // Log the host portion for debugging (mask password only)
+        try {
+            const parsed = new URL(dbUrl);
+            logger.info(`[DB] Host: ${parsed.hostname}:${parsed.port || 5432}`);
+            logger.info(`[DB] Database: ${parsed.pathname}`);
+            logger.info(`[DB] SSL mode in URL: ${parsed.searchParams.get('sslmode') || '(none)'}`);
+            logger.info(`[DB] User: ${parsed.username}`);
         }
-        logger.info('Connecting to database (with 5s timeout)...');
-        // Race promise to timeout connection if it hangs
+        catch (urlErr) {
+            logger.warn(`[DB] Could not parse DATABASE_URL for logging: ${urlErr}`);
+        }
+        // Render PostgreSQL requires SSL — append sslmode=require if not present
+        if (!dbUrl.includes('sslmode') && process.env.NODE_ENV === 'production') {
+            const separator = dbUrl.includes('?') ? '&' : '?';
+            process.env.DATABASE_URL = `${dbUrl}${separator}sslmode=require`;
+            logger.info('[DB] Appended ?sslmode=require for Render PostgreSQL.');
+        }
+        logger.info('[DB] Connecting to database (timeout: 30s)...');
+        // Allow 30s for cold-start DB on Render free tier
         const connectionPromise = prisma.$connect();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timed out after 5000ms')), 5000));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timed out after 30000ms')), 30000));
         await Promise.race([connectionPromise, timeoutPromise]);
-        logger.info('Database connection established.');
+        logger.info('[DB] Connection established successfully.');
         app.listen(config_1.config.port, () => {
             logger.info(`Auth Service running on port ${config_1.config.port}`);
             logger.info(`Environment: ${config_1.config.nodeEnv}`);

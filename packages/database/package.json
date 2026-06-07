@@ -12,7 +12,8 @@
         "db:migrate:reset": "ts-node scripts/db-runner.ts migrate reset",
         "db:studio": "ts-node scripts/db-runner.ts studio",
         "build": "tsc",
-        "postinstall": "prisma generate"
+        "generate": "prisma generate --schema=./prisma/schema.prisma",
+        "postinstall": "prisma generate --schema=./prisma/schema.prisma"
     },
     "dependencies": {
         "@prisma/client": "5.22.0",

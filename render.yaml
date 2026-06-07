@@ -18,15 +18,15 @@ services:
       - key: CORS_ORIGIN
         sync: false # User must provide their Vercel frontend URL here
       - key: AUTH_SERVICE_URL
-        value: http://auth-service:10000
+        sync: false # Set to your deployed Render URL e.g. https://auth-service-xxxx.onrender.com
       - key: ORG_SERVICE_URL
-        value: http://organization-service:10000
+        sync: false # Set to your deployed Render URL e.g. https://organization-service-xxxx.onrender.com
       - key: COLLAB_SERVICE_URL
-        value: http://collab-service:10000
+        sync: false # Set to your deployed Render URL e.g. https://collab-service-xxxx.onrender.com
       - key: DOCS_SERVICE_URL
-        value: http://document-service:10000
+        sync: false # Set to your deployed Render URL e.g. https://document-service-xxxx.onrender.com
       - key: AI_SERVICE_URL
-        value: http://ai-service:10000 # Optional if AI service exists
+        sync: false # Set to your deployed Render URL e.g. https://ai-service-xxxx.onrender.com
 
   # --------------------------------------------------------------------------------
   # 2. AUTH SERVICE
@@ -37,7 +37,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npm run build -w services/auth-service
+    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/auth-service
     startCommand: npm start -w services/auth-service
     envVars:
       - key: PORT
@@ -64,7 +64,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npm run build -w services/organization-service
+    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/organization-service
     startCommand: npm start -w services/organization-service
     envVars:
       - key: PORT
@@ -96,7 +96,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npm run build -w services/collab-service
+    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/collab-service
     startCommand: npm start -w services/collab-service
     envVars:
       - key: PORT
@@ -122,7 +122,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npm run build -w services/document-service
+    buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/document-service
     startCommand: npm start -w services/document-service
     envVars:
       - key: PORT
