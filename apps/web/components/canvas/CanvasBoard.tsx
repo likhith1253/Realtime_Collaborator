@@ -60,11 +60,12 @@ interface CanvasBoardProps {
     setItems: (items: CanvasItem[]) => void;
     selectedId: string | null;
     onSelect: (id: string | null) => void;
-    tool: ShapeType | 'select';
+    tool: ShapeType | 'select' | 'eraser';
     isDrawing: boolean;
     setIsDrawing: (isDrawing: boolean) => void;
     strokeColor: string;
     strokeWidth: number;
+    eraserWidth: number;
 }
 
 // ... URLImage and ShapeWrapper components remain the same ...
@@ -79,6 +80,7 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
     setIsDrawing,
     strokeColor,
     strokeWidth,
+    eraserWidth,
 }) => {
     const stageRef = useRef<Konva.Stage>(null);
     const [newAnnotation, setNewAnnotation] = useState<any[]>([]); // For pencil drawing
@@ -92,7 +94,7 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
     };
 
     const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-        if (tool === 'pencil') {
+        if (tool === 'pencil' || tool === 'eraser') {
             setIsDrawing(true);
             const pos = e.target.getStage()?.getPointerPosition();
             if (pos) {
@@ -104,7 +106,7 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
     };
 
     const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-        if (tool !== 'pencil' || !isDrawing) return;
+        if ((tool !== 'pencil' && tool !== 'eraser') || !isDrawing) return;
         const stage = e.target.getStage();
         const point = stage?.getPointerPosition();
         if (point) {
@@ -113,7 +115,7 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
     };
 
     const handleMouseUp = () => {
-        if (tool === 'pencil' && isDrawing) {
+        if ((tool === 'pencil' || tool === 'eraser') && isDrawing) {
             setIsDrawing(false);
             if (newAnnotation.length > 0) {
                 const newLine: CanvasItem = {
@@ -122,10 +124,12 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
                     points: newAnnotation,
                     x: 0,
                     y: 0,
-                    stroke: strokeColor,
-                    strokeWidth: strokeWidth,
+                    stroke: tool === 'eraser' ? 'rgba(0,0,0,1)' : strokeColor,
+                    strokeWidth: tool === 'eraser' ? eraserWidth : strokeWidth,
                     tension: 0.5,
-                    opacity: 1
+                    opacity: 1,
+                    // Store eraser flag in the item
+                    ...(tool === 'eraser' ? { isEraser: true } : {}),
                 };
                 setItems([...items, newLine]);
                 setNewAnnotation([]);
@@ -207,7 +211,7 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
                                 lineCap="round"
                                 lineJoin="round"
                                 globalCompositeOperation={
-                                    'source-over'
+                                    (item as any).isEraser ? 'destination-out' : 'source-over'
                                 }
                             />
                         )
@@ -219,11 +223,12 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
                 {newAnnotation.length > 0 && (
                     <Line
                         points={newAnnotation}
-                        stroke={strokeColor}
-                        strokeWidth={strokeWidth}
+                        stroke={tool === 'eraser' ? 'rgba(0,0,0,1)' : strokeColor}
+                        strokeWidth={tool === 'eraser' ? eraserWidth : strokeWidth}
                         tension={0.5}
                         lineCap="round"
                         lineJoin="round"
+                        globalCompositeOperation={tool === 'eraser' ? 'destination-out' : 'source-over'}
                     />
                 )}
             </Layer>

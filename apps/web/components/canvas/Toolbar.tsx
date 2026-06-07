@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { MousePointer2, Pencil, Square, Circle, Type, Image as ImageIcon, Save } from 'lucide-react';
+import { MousePointer2, Pencil, Square, Circle, Type, Image as ImageIcon, Save, Eraser, Trash2 } from 'lucide-react';
 import { ShapeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +21,17 @@ const COLORS = [
 ];
 
 interface ToolbarProps {
-    activeTool: 'select' | 'pencil';
-    setActiveTool: (tool: 'select' | 'pencil') => void;
+    activeTool: 'select' | 'pencil' | 'eraser';
+    setActiveTool: (tool: 'select' | 'pencil' | 'eraser') => void;
     onAddShape: (type: 'rect' | 'circle' | 'text') => void;
     onUploadImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onClearAll?: () => void;
     strokeColor: string;
     setStrokeColor: (color: string) => void;
     strokeWidth: number;
     setStrokeWidth: (width: number) => void;
+    eraserWidth: number;
+    setEraserWidth: (width: number) => void;
     onSave?: () => void;
 }
 
@@ -37,10 +40,13 @@ export const CanvasToolbar = ({
     setActiveTool,
     onAddShape,
     onUploadImage,
+    onClearAll,
     strokeColor,
     setStrokeColor,
     strokeWidth,
     setStrokeWidth,
+    eraserWidth,
+    setEraserWidth,
     onSave
 }: ToolbarProps) => {
     return (
@@ -63,6 +69,14 @@ export const CanvasToolbar = ({
                     title="Freehand Draw (P)"
                 >
                     <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant={activeTool === 'eraser' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => setActiveTool('eraser')}
+                    title="Eraser (E)"
+                >
+                    <Eraser className="h-4 w-4" />
                 </Button>
                 <div className="w-px h-6 bg-border mx-1" />
                 <Button
@@ -101,6 +115,7 @@ export const CanvasToolbar = ({
                         <ImageIcon className="h-4 w-4" />
                     </Button>
                 </div>
+                <div className="w-px h-6 bg-border mx-1" />
                 <Button
                     variant="ghost"
                     size="icon"
@@ -109,49 +124,79 @@ export const CanvasToolbar = ({
                 >
                     <Save className="h-4 w-4" />
                 </Button>
+                {onClearAll && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClearAll}
+                        title="Clear canvas"
+                        className="text-destructive hover:text-destructive"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                )}
 
             </div>
 
             {/* Properties Row */}
             <div className="flex items-center gap-4 pt-2 border-t mt-1">
-                {/* Color Picker */}
-                <div className="flex items-center gap-1">
-                    {COLORS.map((color) => (
-                        <button
-                            key={color}
-                            className={`w-6 h-6 rounded-full border ${strokeColor === color ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-                            style={{ backgroundColor: color }}
-                            onClick={() => setStrokeColor(color)}
-                            title={color}
-                        />
-                    ))}
-                    <div className="relative ml-2">
-                        <input
-                            type="color"
-                            value={strokeColor}
-                            onChange={(e) => setStrokeColor(e.target.value)}
-                            className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                            title="Custom Color"
+                {/* Color Picker — hide when eraser is active */}
+                {activeTool !== 'eraser' && (
+                    <>
+                        <div className="flex items-center gap-1">
+                            {COLORS.map((color) => (
+                                <button
+                                    key={color}
+                                    className={`w-6 h-6 rounded-full border ${strokeColor === color ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => setStrokeColor(color)}
+                                    title={color}
+                                />
+                            ))}
+                            <div className="relative ml-2">
+                                <input
+                                    type="color"
+                                    value={strokeColor}
+                                    onChange={(e) => setStrokeColor(e.target.value)}
+                                    className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                                    title="Custom Color"
+                                />
+                            </div>
+                        </div>
+                        <div className="w-px h-6 bg-border mx-1" />
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="stroke-width" className="text-xs whitespace-nowrap">Brush: {strokeWidth}px</Label>
+                            <Input
+                                id="stroke-width"
+                                type="range"
+                                min="1"
+                                max="50"
+                                step="1"
+                                value={strokeWidth}
+                                onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
+                                className="w-24 h-8"
+                            />
+                        </div>
+                    </>
+                )}
+
+                {/* Eraser size — only when eraser is active */}
+                {activeTool === 'eraser' && (
+                    <div className="flex items-center gap-2">
+                        <Eraser className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Label htmlFor="eraser-width" className="text-xs whitespace-nowrap">Eraser: {eraserWidth}px</Label>
+                        <Input
+                            id="eraser-width"
+                            type="range"
+                            min="5"
+                            max="80"
+                            step="1"
+                            value={eraserWidth}
+                            onChange={(e) => setEraserWidth(parseInt(e.target.value))}
+                            className="w-24 h-8"
                         />
                     </div>
-                </div>
-
-                <div className="w-px h-6 bg-border mx-1" />
-
-                {/* Stroke Width */}
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="stroke-width" className="text-xs whitespace-nowrap">Width: {strokeWidth}px</Label>
-                    <Input
-                        id="stroke-width"
-                        type="range"
-                        min="1"
-                        max="20"
-                        step="1"
-                        value={strokeWidth}
-                        onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-                        className="w-24 h-8"
-                    />
-                </div>
+                )}
             </div>
         </div>
     )

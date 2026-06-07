@@ -27,11 +27,12 @@ interface CanvasEditorProps {
 const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
     const [items, setItems] = useState<CanvasItem[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [activeTool, setActiveTool] = useState<'select' | 'pencil'>('select');
+    const [activeTool, setActiveTool] = useState<'select' | 'pencil' | 'eraser'>('select');
     const [isDrawing, setIsDrawing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [strokeColor, setStrokeColor] = useState('#000000');
     const [strokeWidth, setStrokeWidth] = useState(5);
+    const [eraserWidth, setEraserWidth] = useState(20);
 
     // Ref to track if the current update comes from remote
     const isRemoteUpdate = useRef(false);
@@ -198,6 +199,11 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
         }
     };
 
+    const handleClearAll = () => {
+        setItems([]);
+        toast.success('Canvas cleared');
+    };
+
     if (isLoading) {
         return <div className="flex items-center justify-center h-full bg-gray-50 text-gray-400">Loading...</div>;
     }
@@ -232,7 +238,10 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
                 setStrokeColor={setStrokeColor}
                 strokeWidth={strokeWidth}
                 setStrokeWidth={setStrokeWidth}
+                eraserWidth={eraserWidth}
+                setEraserWidth={setEraserWidth}
                 onSave={handleSave}
+                onClearAll={handleClearAll}
             />
             <CanvasBoard
                 items={items}
@@ -244,6 +253,7 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
                 setIsDrawing={setIsDrawing}
                 strokeColor={strokeColor}
                 strokeWidth={strokeWidth}
+                eraserWidth={eraserWidth}
             />
         </div>
     );
