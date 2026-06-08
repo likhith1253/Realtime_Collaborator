@@ -18,6 +18,7 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(health_router, prefix="/ai")  # Add health check under /ai prefix
 from src.routes import chat
+from src.services.ai import ai_service
 app.include_router(chat.router, prefix="/ai")
 
 @app.on_event("startup")
@@ -25,7 +26,15 @@ async def startup_event():
     logger.info(f"Starting {settings.app_name} on port {settings.port}")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"CORS origin: {settings.cors_origin}")
-    logger.info(f"Gemini API key configured: {bool(settings.gemini_api_key)}")
+    logger.info(f"AI Model configured: {settings.ai_model}")
+    logger.info(f"GEMINI_API_KEY loaded: {bool(settings.gemini_api_key)}")
+    logger.info(f"AI Service model initialized: {ai_service.model is not None}")
+    
+    if not ai_service.model:
+        logger.warning("⚠️  AI Service not initialized - check GEMINI_API_KEY")
+    else:
+        logger.info("✓ AI Service ready")
+    
     logger.info("Registered routes: GET /health, GET /ai/health, POST /ai/chat")
 
 if __name__ == "__main__":
