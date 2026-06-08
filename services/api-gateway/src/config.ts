@@ -2,37 +2,47 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const isProduction = (process.env.NODE_ENV || 'development') === 'production';
+
 const sanitizeUrl = (url: string) => {
     if (!url) return url;
-    // Remove trailing slashes
     let sanitized = url.trim().replace(/\/+$/, '');
-    // If it's a public render URL, ensure it starts with https
     if (sanitized.includes('onrender.com') && !sanitized.startsWith('http')) {
         sanitized = `https://${sanitized}`;
     }
     return sanitized;
 };
 
+const getRequiredUrl = (key: string, fallback: string) => {
+    const value = sanitizeUrl(process.env[key] || fallback);
+
+    if (isProduction && !process.env[key]) {
+        throw new Error(`Missing required environment variable: ${key}`);
+    }
+
+    return value;
+};
+
 export const config = {
     port: process.env.PORT || 8000,
     services: {
         auth: {
-            url: sanitizeUrl(process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:3001'),
+            url: getRequiredUrl('AUTH_SERVICE_URL', 'http://127.0.0.1:3001'),
         },
         org: {
-            url: sanitizeUrl(process.env.ORG_SERVICE_URL || 'http://127.0.0.1:3004'),
+            url: getRequiredUrl('ORG_SERVICE_URL', 'http://127.0.0.1:3004'),
         },
         docs: {
-            url: sanitizeUrl(process.env.DOCS_SERVICE_URL || 'http://127.0.0.1:3002'),
+            url: getRequiredUrl('DOCS_SERVICE_URL', 'http://127.0.0.1:3002'),
         },
         collab: {
-            url: sanitizeUrl(process.env.COLLAB_SERVICE_URL || 'http://127.0.0.1:3003'),
+            url: getRequiredUrl('COLLAB_SERVICE_URL', 'http://127.0.0.1:3003'),
         },
         ai: {
-            url: sanitizeUrl(process.env.AI_SERVICE_URL || 'http://127.0.0.1:8001'),
-        }
+            url: getRequiredUrl('AI_SERVICE_URL', 'http://127.0.0.1:8001'),
+        },
     },
     cors: {
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000', // Web App
-    }
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    },
 };

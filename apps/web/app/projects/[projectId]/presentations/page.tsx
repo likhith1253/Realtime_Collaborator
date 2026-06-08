@@ -7,6 +7,8 @@ import { Presentation, Plus, Search, Calendar, MoreVertical, ArrowLeft, FileText
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getProjectPresentations, createPresentation, type Presentation as PresentationType } from '@/lib/presentations';
+import { createPresentationSlide } from '@/lib/slides';
+import { aiService } from '@/lib/ai-service';
 import { ApiClient } from '@/lib/api-client';
 
 export default function ProjectPresentationsPage() {
@@ -18,6 +20,7 @@ export default function ProjectPresentationsPage() {
     const [projectName, setProjectName] = useState('Project');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -56,6 +59,51 @@ export default function ProjectPresentationsPage() {
         }
     };
 
+    const handleGeneratePresentation = async () => {
+        const prompt = window.prompt('Describe the presentation you want to generate');
+        if (!prompt) return;
+
+        try {
+            setGenerating(true);
+            setError('');
+
+            const aiPrompt = [
+                'Generate a presentation outline as JSON only.',
+                'Return an object with keys "title" and "slides".',
+                'Each slide must have "title" and "content".',
+                'Do not wrap the JSON in markdown fences.',
+                `User request: ${prompt}`,
+            ].join(' ');
+
+            const rawResponse = await aiService.chat(aiPrompt, '');
+            const cleanedResponse = rawResponse.replace(/```json|```/g, '').trim();
+            const parsed = JSON.parse(cleanedResponse) as {
+                title?: string;
+                slides?: Array<{ title?: string; content?: string }>;
+            };
+
+            const presentationTitle = parsed.title?.trim() || prompt.slice(0, 60) || 'AI Generated Presentation';
+            const slides = Array.isArray(parsed.slides) ? parsed.slides : [];
+
+            const newPresentation = await createPresentation(presentationTitle, projectId);
+
+            for (const slide of slides) {
+                await createPresentationSlide(
+                    slide.title?.trim() || 'Untitled Slide',
+                    newPresentation.id,
+                    slide.content?.trim() || ''
+                );
+            }
+
+            router.push(`/projects/${projectId}/presentations/${newPresentation.id}`);
+        } catch (err) {
+            console.error('Failed to generate presentation:', err);
+            setError('Failed to generate presentation');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center">
@@ -89,7 +137,11 @@ export default function ProjectPresentationsPage() {
                                 Manage presentations for {projectName}
                             </p>
                         </div>
-                        <Button onClick={handleCreatePresentation} disabled={creating} className="shrink-0">
+                        <div className="flex gap-2">
+                            <Button onClick={handleGeneratePresentation} disabled={generating} variant="outline" className="shrink-0">
+                                {generating ? 'Generating...' : 'Generate with AI'}
+                            </Button>
+                            <Button onClick={handleCreatePresentation} disabled={creating} className="shrink-0">
                             {creating ? (
                                 <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -101,7 +153,8 @@ export default function ProjectPresentationsPage() {
                                     New Presentation
                                 </>
                             )}
-                        </Button>
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

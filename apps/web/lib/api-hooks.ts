@@ -72,10 +72,10 @@ export function useOrganizations(): UseDataReturn<Organization[]> {
     setLoading(true)
     setError(null)
     try {
-      const organizations = await ApiClient.get<Organization[]>(
-        '/organizations'
+      const response = await ApiClient.get<{ organizations: Organization[] } | Organization[]>(
+        '/orgs/me'
       )
-      setData(organizations)
+      setData(Array.isArray(response) ? response : response.organizations || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch organizations')
     } finally {

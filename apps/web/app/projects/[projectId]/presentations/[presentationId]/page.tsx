@@ -21,6 +21,7 @@ export default function PresentationSlidesPage() {
     const [projectName, setProjectName] = useState('Project');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -64,6 +65,38 @@ export default function PresentationSlidesPage() {
         }
     };
 
+    const handleDownloadPresentation = async () => {
+        try {
+            setExporting(true);
+            const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${presentation?.title || 'Presentation'}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f8fafc; }
+    .slide { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; margin: 0 auto 24px; max-width: 960px; min-height: 540px; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
+    h1 { margin-top: 0; }
+    pre { white-space: pre-wrap; font-family: inherit; }
+  </style>
+</head>
+<body>
+  ${slides.map((slide, index) => `<section class="slide"><h1>${slide.title || `Slide ${index + 1}`}</h1><pre>${slide.content || ''}</pre></section>`).join('')}
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `${(presentation?.title || 'presentation').replace(/[^a-z0-9-_]+/gi, '-').toLowerCase()}.html`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            setExporting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center">
@@ -102,6 +135,9 @@ export default function PresentationSlidesPage() {
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={handleDownloadPresentation} disabled={exporting}>
+                                {exporting ? 'Exporting...' : 'Download HTML'}
+                            </Button>
                             <Button variant="outline" size="sm">
                                 <Settings className="w-4 h-4 mr-2" />
                                 Settings

@@ -23,6 +23,10 @@ app.include_router(chat.router, prefix="/ai")
 @app.on_event("startup")
 async def startup_event():
     logger.info(f"Starting {settings.app_name} on port {settings.port}")
+    logger.info(f"Environment: {settings.environment}")
+    logger.info(f"CORS origin: {settings.cors_origin}")
+    logger.info(f"Gemini API key configured: {bool(settings.gemini_api_key)}")
+    logger.info("Registered routes: GET /health, GET /ai/health, POST /ai/chat")
 
 if __name__ == "__main__":
     import uvicorn

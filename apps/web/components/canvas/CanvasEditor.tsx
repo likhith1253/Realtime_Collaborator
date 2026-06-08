@@ -33,9 +33,34 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
     const [strokeColor, setStrokeColor] = useState('#000000');
     const [strokeWidth, setStrokeWidth] = useState(5);
     const [eraserWidth, setEraserWidth] = useState(20);
+    const [history, setHistory] = useState<CanvasItem[][]>([]);
+    const [future, setFuture] = useState<CanvasItem[][]>([]);
 
     // Ref to track if the current update comes from remote
     const isRemoteUpdate = useRef(false);
+    const itemsRef = useRef<CanvasItem[]>([]);
+
+    useEffect(() => {
+        itemsRef.current = items;
+    }, [items]);
+
+    const setCanvasItems = React.useCallback((
+        next: React.SetStateAction<CanvasItem[]>,
+        options: { recordHistory?: boolean } = {}
+    ) => {
+        const { recordHistory = true } = options;
+
+        setItems((current) => {
+            const resolved = typeof next === 'function' ? (next as (value: CanvasItem[]) => CanvasItem[])(current) : next;
+
+            if (recordHistory) {
+                setHistory((prev) => [...prev, current]);
+                setFuture([]);
+            }
+
+            return resolved;
+        });
+    }, []);
 
     // Load backend data
     useEffect(() => {
@@ -45,8 +70,12 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
 
                 if (data.data && Array.isArray(data.data.items)) {
                     setItems(data.data.items);
+                    setHistory([]);
+                    setFuture([]);
                 } else {
                     setItems([]);
+                    setHistory([]);
+                    setFuture([]);
                 }
             } catch (error) {
                 console.log('Canvas not found or failed to load, starting with blank canvas:', error);
@@ -77,7 +106,7 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
                 const remoteItems = JSON.parse(data.canvasData);
                 if (Array.isArray(remoteItems)) {
                     isRemoteUpdate.current = true;
-                    setItems(remoteItems);
+                    setCanvasItems(remoteItems, { recordHistory: false });
                 }
             } catch (e) {
                 console.error('Failed to parse remote canvas update', e);
@@ -110,7 +139,27 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
         }, 1000);
 
         return () => clearTimeout(timeoutId);
-    }, [items, canvasId, isLoading]);
+        }, [items, canvasId, isLoading]);
+
+    const handleUndo = () => {
+        const previous = history[history.length - 1];
+        if (!previous) return;
+
+        const currentItems = itemsRef.current;
+        setHistory((prev) => prev.slice(0, -1));
+        setFuture((prev) => [currentItems, ...prev]);
+        setCanvasItems(previous, { recordHistory: false });
+    };
+
+    const handleRedo = () => {
+        const nextItems = future[0];
+        if (!nextItems) return;
+
+        const currentItems = itemsRef.current;
+        setFuture((prev) => prev.slice(1));
+        setHistory((prev) => [...prev, currentItems]);
+        setCanvasItems(nextItems, { recordHistory: false });
+    };
 
 
     const handleAddShape = (type: 'rect' | 'circle' | 'text') => {
@@ -158,7 +207,7 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
             };
         }
 
-        setItems((prev) => [...prev, newItem]);
+        setCanvasItems((prev) => [...prev, newItem]);
         setSelectedId(id);
         setActiveTool('select');
     };
@@ -181,7 +230,7 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
                     scaleX: 1,
                     scaleY: 1,
                 };
-                setItems((prev) => [...prev, newItem]);
+                setCanvasItems((prev) => [...prev, newItem]);
                 setSelectedId(id);
             };
             reader.readAsDataURL(file);
@@ -200,7 +249,7 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
     };
 
     const handleClearAll = () => {
-        setItems([]);
+        setCanvasItems([]);
         toast.success('Canvas cleared');
     };
 
@@ -242,10 +291,14 @@ const CanvasEditor = ({ canvasId, projectId, onBack }: CanvasEditorProps) => {
                 setEraserWidth={setEraserWidth}
                 onSave={handleSave}
                 onClearAll={handleClearAll}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                canUndo={history.length > 0}
+                canRedo={future.length > 0}
             />
             <CanvasBoard
                 items={items}
-                setItems={setItems}
+                setItems={setCanvasItems}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 tool={activeTool}

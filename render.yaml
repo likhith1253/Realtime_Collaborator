@@ -65,7 +65,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/organization-service
-    startCommand: node packages/database/scripts/migrate.js && npm start -w services/organization-service
+    startCommand: node packages/database/scripts/wait-for-schema.js organization-service organizations,users,organization_members && npm start -w services/organization-service
     envVars:
       - key: PORT
         value: 10000
@@ -97,7 +97,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/collab-service
-    startCommand: node packages/database/scripts/migrate.js && npm start -w services/collab-service
+    startCommand: node packages/database/scripts/wait-for-schema.js collab-service users,projects,documents && npm start -w services/collab-service
     envVars:
       - key: PORT
         value: 10000
@@ -123,7 +123,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: npm install --production=false && npm run build -w packages/types && npm run build -w packages/logger && npm run build -w packages/database && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w services/document-service
-    startCommand: node packages/database/scripts/migrate.js && npm start -w services/document-service
+    startCommand: node packages/database/scripts/wait-for-schema.js document-service organizations,users,projects,documents,document_versions,presentations,slides,canvas,team_members,invitations,messages && npm start -w services/document-service
     envVars:
       - key: PORT
         value: 10000

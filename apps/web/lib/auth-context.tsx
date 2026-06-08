@@ -192,7 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const errorData = await response.json().catch(() => ({}))
         // Handle different error response formats
         let errorMessage = 'Registration failed'
-        if (errorData.error) {
+        if (response.status === 429) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.'
+        } else if (errorData.error) {
           if (Array.isArray(errorData.error)) {
             // Handle Zod validation errors
             errorMessage = (errorData.error as unknown[])

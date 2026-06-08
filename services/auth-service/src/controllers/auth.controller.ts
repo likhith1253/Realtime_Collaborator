@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
 // @ts-ignore - Local module resolution
 import { AuthService } from '../services/auth.service';
-// @ts-ignore - Prisma client is not fully typed in this context yet
-import { PrismaClient } from '@collab/database';
+import { getPrismaClient } from '@collab/database';
 // @ts-ignore - Local module resolution
 import { RegisterSchema, LoginSchema, RefreshTokenSchema } from '@packages/types';
 
 const authService = new AuthService();
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export class AuthController {
     async register(req: Request, res: Response) {

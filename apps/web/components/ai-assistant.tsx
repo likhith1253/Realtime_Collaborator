@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { aiService } from '@/lib/ai-service'
 
 type Message = {
   id: string
@@ -43,10 +44,9 @@ export function AIAssistant() {
     }
   }, [input])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) return
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -54,58 +54,40 @@ export function AIAssistant() {
       timestamp: new Date(),
     }
 
+    const prompt = input
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
 
-    // Simulate AI response delay
-    setTimeout(() => {
+    try {
+      const aiResponse = await aiService.chat(prompt, '')
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: generateMockResponse(input),
+        content: aiResponse,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: error instanceof Error
+          ? error.message
+          : 'AI service is temporarily unavailable. Please try again.',
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+    } finally {
       setIsLoading(false)
-    }, 800)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSendMessage()
+      void handleSendMessage()
     }
-  }
-
-  const generateMockResponse = (userInput: string): string => {
-    const responses: Record<string, string> = {
-      default:
-        'That\'s a great question! Based on the content of your document, I can help you improve clarity, structure, or engagement. What specific aspect would you like to focus on?',
-      improve:
-        'I can enhance your writing by:\n• Improving clarity and conciseness\n• Enhancing tone and voice\n• Strengthening arguments\n• Expanding key sections\n\nWhich would be most helpful?',
-      summary:
-        'Here\'s a brief summary of your document:\n\nYour document appears to cover key points about collaboration and productivity. Would you like me to:\n• Create a more detailed outline?\n• Suggest additional sections?\n• Improve the flow between ideas?',
-      grammar:
-        'I\'ve reviewed the grammar and structure. The document is well-written overall. A few suggestions:\n• Consider varying sentence length for better rhythm\n• Some transitions could be stronger\n• A few phrases could be more concise\n\nWould you like specific examples?',
-    }
-
-    const lowerInput = userInput.toLowerCase()
-    if (lowerInput.includes('improve') || lowerInput.includes('better')) {
-      return responses.improve
-    }
-    if (lowerInput.includes('summary') || lowerInput.includes('summarize')) {
-      return responses.summary
-    }
-    if (
-      lowerInput.includes('grammar') ||
-      lowerInput.includes('check') ||
-      lowerInput.includes('error')
-    ) {
-      return responses.grammar
-    }
-
-    return responses.default
   }
 
   return (
