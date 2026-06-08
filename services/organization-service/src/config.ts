@@ -27,4 +27,5 @@ export const config = {
     clientUrl: getEnv('CLIENT_URL'),
     databaseUrl: getEnv('DATABASE_URL'),
     stripeSecretKey: getEnv('STRIPE_SECRET_KEY'),
+    stripeWebhookSecret: getEnv('STRIPE_WEBHOOK_SECRET'),
 };
