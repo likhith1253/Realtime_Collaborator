@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     cors_origin: str = "http://localhost:3000"
     mock_ai: bool = False
     mock_ai_on_error: bool = True
-    ai_model: str = "gemini-1.5-flash"
+    ai_model: str = "gemini-2.5-flash"
 
     class Config:
         env_file = ".env"
