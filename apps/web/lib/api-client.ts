@@ -27,7 +27,7 @@ async function refreshToken(): Promise<string | null> {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: storedRefreshToken }),
+      body: JSON.stringify({ refresh_token: storedRefreshToken }),
     })
 
     if (!response.ok) return null
@@ -128,13 +128,10 @@ export class ApiClient {
       })
 
       if (!response.ok) {
-        // Only log errors in development, not in production
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[API] Error Response:', { url, status: response.status, statusText: response.statusText });
-        }
-        const error = new Error(
-          data.message || `API Error: ${response.status} ${response.statusText}`
-        )
+        const errorMessage = response.status === 429
+          ? 'Too many requests. Please wait a moment and try again.'
+          : (data.message || data.error || `API Error: ${response.status} ${response.statusText}`)
+        const error = new Error(errorMessage)
         throw error
       }
 

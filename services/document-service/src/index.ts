@@ -7,7 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { PrismaClient } from '@collab/database';
+import { getPrismaClient, initializeDatabase, disconnectPrisma } from '@collab/database';
 import { config } from './config';
 import { logger } from './logger';
 import { healthCheck } from './health';
@@ -15,7 +15,7 @@ import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
 
 // Initialize Prisma Client
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 const app = express();
 
@@ -43,7 +43,9 @@ app.use(express.json());
 app.use(morgan('combined'));
 
 // Health check endpoint (no auth required)
-app.get('/health', healthCheck);
+app.get('/health', (req, res) => {
+    void healthCheck(req, res);
+});
 
 // Mount API routes
 app.use('/', routes);
@@ -70,12 +72,17 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
  */
 const startServer = async () => {
     try {
-        // Verify database connection
-        await prisma.$connect();
-        logger.info('Connected to database');
+        const dbStatus = await initializeDatabase('document-service');
+
+        if (!dbStatus.connected) {
+            logger.error('Failed to start server:', dbStatus.error);
+            process.exit(1);
+        }
 
         app.listen(config.port, () => {
             logger.info(`Document Service running on port ${config.port}`);
+            logger.info(`Database host: ${dbStatus.host}:${dbStatus.port}`);
+            logger.info('Registered routes: /projects, /documents, /presentations, /slides, /canvas, /invites, /organizations');
         });
     } catch (error) {
         logger.error('Failed to start server:', error);

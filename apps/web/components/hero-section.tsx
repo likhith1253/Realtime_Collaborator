@@ -83,7 +83,7 @@ export default function HeroSection() {
                 variant="outline"
                 className="h-12 px-8 text-base border-border bg-transparent opacity-60 cursor-not-allowed"
                 disabled
-                title="Demo video coming soon"
+                title="Demo video unavailable"
               >
                 Watch Demo
               </Button>

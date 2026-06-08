@@ -15,4 +15,6 @@ export declare function getPrismaClient(): PrismaClient;
  * Call this during graceful shutdown
  */
 export declare function disconnectPrisma(): Promise<void>;
+export { initializeDatabase, checkDatabaseHealth } from './bootstrap';
+export type { DatabaseBootstrapResult } from './bootstrap';
 //# sourceMappingURL=index.d.ts.map

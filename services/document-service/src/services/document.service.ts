@@ -130,8 +130,8 @@ export async function getDocument(documentId: string, userId: string) {
         id: document.id,
         title: document.title,
         content: contentStr,
-        projectId: document.project_id,
-        updatedAt: document.updated_at.toISOString()
+        project_id: document.project_id,
+        updated_at: document.updated_at.toISOString()
     };
 }
 
@@ -174,8 +174,8 @@ export async function updateDocument(
         id: document.id,
         title: document.title,
         content: document.yjs_binary_state?.toString('utf8') || '',
-        projectId: document.project_id,
-        updatedAt: document.updated_at.toISOString()
+        project_id: document.project_id,
+        updated_at: document.updated_at.toISOString()
     };
 }
 

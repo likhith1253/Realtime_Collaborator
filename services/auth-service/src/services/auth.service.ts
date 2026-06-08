@@ -1,12 +1,11 @@
 import bcrypt from 'bcrypt';
 import { SigninUser, SignupUser } from '@packages/types';
-// @ts-ignore - Prisma client is not fully typed in this context yet
-import { PrismaClient } from '@collab/database';
+import { getPrismaClient } from '@collab/database';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 // @ts-ignore - Local module resolution
 import { createLogger } from '@packages/logger';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 const logger = createLogger('auth-service');
 
 export class AuthService {
@@ -63,6 +62,14 @@ export class AuthService {
                     full_name: data.full_name,
                     organization_id: org.id,
                     role: 'owner'
+                },
+            });
+
+            await tx.organizationMember.create({
+                data: {
+                    organization_id: org.id,
+                    user_id: newUser.id,
+                    role: 'owner',
                 },
             });
 

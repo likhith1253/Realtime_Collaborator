@@ -58,6 +58,7 @@ const health_1 = require("./health");
 const jwt_1 = require("./utils/jwt");
 const AppErrors_1 = require("./utils/AppErrors");
 const collabHandler = __importStar(require("./handlers/collab.handler"));
+const database_1 = require("@collab/database");
 // ============================================================================
 // Express App Setup
 // ============================================================================
@@ -85,7 +86,9 @@ app.use((0, morgan_1.default)('combined'));
 // ============================================================================
 // Routes
 // ============================================================================
-app.get('/health', health_1.healthCheck);
+app.get('/health', (req, res) => {
+    void (0, health_1.healthCheck)(req, res);
+});
 // ============================================================================
 // Socket.io Authentication Middleware
 // ============================================================================
@@ -136,10 +139,18 @@ io.on('connection', (socket) => {
 // ============================================================================
 const startServer = async () => {
     try {
+        const dbStatus = await (0, database_1.initializeDatabase)('collab-service');
+        if (!dbStatus.connected) {
+            logger_1.logger.error(`Failed to start server: ${dbStatus.error}`);
+            process.exit(1);
+        }
         server.listen(config_1.config.port, () => {
             logger_1.logger.info(`Collab Service (Socket.io) running on port ${config_1.config.port}`);
             logger_1.logger.info(`Environment: ${config_1.config.nodeEnv}`);
             logger_1.logger.info(`WebSocket path: /socket.io`);
+            logger_1.logger.info(`Collab service URL target: ${process.env.COLLAB_SERVICE_URL || 'local'}`);
+            logger_1.logger.info(`Database host: ${dbStatus.host}:${dbStatus.port}`);
+            logger_1.logger.info('Registered events: join-document, leave-document, yjs-update, join-organization');
         });
     }
     catch (error) {
@@ -162,6 +173,7 @@ const shutdown = async (signal) => {
     });
     // Save pending documents and cleanup
     await collabHandler.shutdown();
+    await (0, database_1.disconnectPrisma)();
     logger_1.logger.info('Graceful shutdown complete');
     process.exit(0);
 };

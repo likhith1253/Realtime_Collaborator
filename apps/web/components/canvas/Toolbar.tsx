@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { MousePointer2, Pencil, Square, Circle, Type, Image as ImageIcon, Save, Eraser, Trash2 } from 'lucide-react';
+import { MousePointer2, Pencil, Square, Circle, Type, Image as ImageIcon, Save, Eraser, Trash2, Undo2, Redo2 } from 'lucide-react';
 import { ShapeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,10 @@ interface ToolbarProps {
     eraserWidth: number;
     setEraserWidth: (width: number) => void;
     onSave?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
 }
 
 export const CanvasToolbar = ({
@@ -47,7 +51,11 @@ export const CanvasToolbar = ({
     setStrokeWidth,
     eraserWidth,
     setEraserWidth,
-    onSave
+    onSave,
+    onUndo,
+    onRedo,
+    canUndo = false,
+    canRedo = false
 }: ToolbarProps) => {
     return (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-background border px-4 py-2 rounded-lg shadow-lg flex flex-col gap-2 z-50">
@@ -77,6 +85,25 @@ export const CanvasToolbar = ({
                     title="Eraser (E)"
                 >
                     <Eraser className="h-4 w-4" />
+                </Button>
+                <div className="w-px h-6 bg-border mx-1" />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onUndo?.()}
+                    disabled={!canUndo}
+                    title="Undo"
+                >
+                    <Undo2 className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRedo?.()}
+                    disabled={!canRedo}
+                    title="Redo"
+                >
+                    <Redo2 className="h-4 w-4" />
                 </Button>
                 <div className="w-px h-6 bg-border mx-1" />
                 <Button

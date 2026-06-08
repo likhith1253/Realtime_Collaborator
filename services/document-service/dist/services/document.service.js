@@ -121,8 +121,8 @@ async function getDocument(documentId, userId) {
         id: document.id,
         title: document.title,
         content: contentStr,
-        projectId: document.project_id,
-        updatedAt: document.updated_at.toISOString()
+        project_id: document.project_id,
+        updated_at: document.updated_at.toISOString()
     };
 }
 /**
@@ -156,8 +156,8 @@ async function updateDocument(documentId, userId, updates) {
         id: document.id,
         title: document.title,
         content: document.yjs_binary_state?.toString('utf8') || '',
-        projectId: document.project_id,
-        updatedAt: document.updated_at.toISOString()
+        project_id: document.project_id,
+        updated_at: document.updated_at.toISOString()
     };
 }
 /**

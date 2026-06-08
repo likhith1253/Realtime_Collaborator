@@ -146,9 +146,8 @@ export default function SignInPage() {
                 </Label>
                 <button
                   type="button"
-                  onClick={() => alert('Password reset feature coming soon!')}
-                  className="text-xs text-muted-foreground/60 cursor-not-allowed font-medium"
-                  title="Coming soon"
+                  onClick={() => setError('Password reset is not available yet. Please contact your administrator.')}
+                  className="text-xs text-muted-foreground font-medium"
                 >
                   Forgot password?
                 </button>
