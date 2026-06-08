@@ -83,7 +83,9 @@ services:
       - key: CLIENT_URL
         sync: false # Frontend URL
       - key: STRIPE_SECRET_KEY
-        sync: false # Optional/Placeholder
+        sync: false # Stripe secret key for backend
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # Stripe webhook signing secret
       - key: CORS_ORIGIN
         sync: false
 
