@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/lib/auth-context'
+import { Logo } from '@/components/logo'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -98,7 +99,7 @@ export default function SignInPage() {
           >
             <div className="flex items-center justify-center mb-6">
               <div className="w-12 h-12 bg-gradient-to-br from-accent to-accent/80 rounded-lg flex items-center justify-center">
-                <span className="text-accent-foreground font-bold text-lg">C</span>
+                <Logo size={28} className="text-accent-foreground" />
               </div>
             </div>
           </motion.div>

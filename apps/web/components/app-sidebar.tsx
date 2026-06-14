@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Logo } from '@/components/logo'
 
 import { getProjects, Project } from '@/lib/projects'
 import { useRouter } from 'next/navigation'
@@ -149,8 +150,8 @@ export function Sidebar() {
             className="w-full flex items-center justify-between p-3 rounded-lg bg-sidebar-accent hover:bg-sidebar-accent/80 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-sidebar-foreground text-sm font-semibold">
-                AC
+              <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                <Logo size={20} className="text-white" />
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-sidebar-foreground">
