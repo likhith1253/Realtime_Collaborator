@@ -53,8 +53,8 @@ app.get('/test-debug', (req, res) => {
     res.status(200).send('SERVER_IS_UPDATED_AND_WORKING');
 });
 
-const BASE_PATH = '/auth';
-app.use(BASE_PATH, authRoutes);
+// Mount routes at root - gateway handles /auth prefix
+app.use('/', authRoutes);
 app.use(errorHandler);
 
 const startServer = async () => {
@@ -68,7 +68,7 @@ const startServer = async () => {
     app.listen(config.port, () => {
         logger.info(`Auth Service running on port ${config.port}`);
         logger.info(`Environment: ${config.nodeEnv}`);
-        logger.info(`Auth Service Base URL: http://localhost:${config.port}${BASE_PATH}`);
+        logger.info(`Auth Service Base URL: http://localhost:${config.port}/auth`);
         logger.info(`Database host: ${dbStatus.host}:${dbStatus.port}`);
         logger.info(`Applied migrations: ${dbStatus.appliedMigrations}`);
 
@@ -77,7 +77,7 @@ const startServer = async () => {
             authRoutes.stack.forEach((r: any) => {
                 if (r.route && r.route.path) {
                     const methods = Object.keys(r.route.methods).join(', ').toUpperCase();
-                    logger.info(`- ${methods} ${BASE_PATH}${r.route.path}`);
+                    logger.info(`- ${methods} /auth${r.route.path}`);
                 }
             });
         }
