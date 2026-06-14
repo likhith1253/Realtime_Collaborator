@@ -1,5 +1,22 @@
 import { Request, Response } from 'express';
+import { checkDatabaseHealth } from '@collab/database';
 
-export const healthCheck = (req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', service: 'document-service' });
+export const healthCheck = async (req: Request, res: Response) => {
+    const db = await checkDatabaseHealth();
+
+    if (!db.ok) {
+        res.status(503).json({
+            status: 'degraded',
+            service: 'document-service',
+            database: 'disconnected',
+            error: db.error,
+        });
+        return;
+    }
+
+    res.status(200).json({
+        status: 'ok',
+        service: 'document-service',
+        database: 'connected',
+    });
 };

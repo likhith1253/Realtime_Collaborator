@@ -57,7 +57,7 @@ const URLImage = ({ item, isSelected, onSelect, onChange }: any) => {
 
 interface CanvasBoardProps {
     items: CanvasItem[];
-    setItems: (items: CanvasItem[]) => void;
+    setItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>;
     selectedId: string | null;
     onSelect: (id: string | null) => void;
     tool: ShapeType | 'select' | 'eraser';
@@ -131,14 +131,14 @@ const CanvasBoard: React.FC<CanvasBoardProps> = ({
                     // Store eraser flag in the item
                     ...(tool === 'eraser' ? { isEraser: true } : {}),
                 };
-                setItems([...items, newLine]);
+                setItems((prev) => [...prev, newLine]);
                 setNewAnnotation([]);
             }
         }
     };
 
     const updateItem = (id: string, newAttrs: any) => {
-        setItems(items.map(item => item.id === id ? newAttrs : item));
+        setItems((prev) => prev.map(item => item.id === id ? newAttrs : item));
     }
 
     return (

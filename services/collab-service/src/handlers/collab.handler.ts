@@ -42,6 +42,10 @@ function getChatRoomName(projectId: string): string {
     return `project:${projectId}:chat`;
 }
 
+function getSlideRoomName(slideId: string): string {
+    return `slide:${slideId}`;
+}
+
 // ============================================================================
 // Socket Registration
 // ============================================================================
@@ -231,7 +235,7 @@ function handleDisconnect(socket: Socket): void {
     const roomName = socketRooms.get(socket.id);
     const orgRoomName = socketOrgRooms.get(socket.id);
 
-    if (roomName) {
+    if (roomName && roomName.startsWith('document:')) {
         // Broadcast leave event to document room
         socket.to(roomName).emit('user-left-document', { userId: user?.userId });
         logger.info(`User ${user?.email || 'unknown'} left room ${roomName}`);
@@ -351,6 +355,94 @@ function handleDocumentUpdate(
     });
 }
 
+function handleJoinSlide(
+    socket: Socket,
+    payload: { slideId: string }
+): void {
+    const { slideId } = payload;
+    const user = socketUsers.get(socket.id);
+
+    if (!user) {
+        socket.emit('error', { code: 'AUTH_ERROR', message: 'Not authenticated' });
+        return;
+    }
+
+    if (!slideId) {
+        socket.emit('error', { code: 'INVALID_PAYLOAD', message: 'slideId is required' });
+        return;
+    }
+
+    const roomName = getSlideRoomName(slideId);
+    const previousRoom = socketRooms.get(socket.id);
+
+    if (previousRoom && previousRoom !== roomName) {
+        socket.leave(previousRoom);
+    }
+
+    socket.join(roomName);
+    socketRooms.set(socket.id, roomName);
+
+    logger.info(`User ${user.email} joined slide ${slideId}`);
+    socket.emit('joined-slide', { slideId, roomName });
+}
+
+function handleSlideUpdate(
+    socket: Socket,
+    payload: { slideId: string; title?: string; content?: string }
+): void {
+    const { slideId, title, content } = payload;
+    const user = socketUsers.get(socket.id);
+
+    if (!user) {
+        socket.emit('error', { code: 'AUTH_ERROR', message: 'Not authenticated' });
+        return;
+    }
+
+    if (!slideId) {
+        socket.emit('error', { code: 'INVALID_PAYLOAD', message: 'slideId is required' });
+        return;
+    }
+
+    socket.to(getSlideRoomName(slideId)).emit('slide-update', {
+        slideId,
+        title,
+        content,
+        updatedBy: {
+            userId: user.userId,
+            email: user.email,
+            name: user.name || user.email,
+        },
+    });
+}
+
+function handleCanvasUpdate(
+    socket: Socket,
+    payload: { documentId: string; canvasData: string }
+): void {
+    const { documentId, canvasData } = payload;
+    const user = socketUsers.get(socket.id);
+
+    if (!user) {
+        socket.emit('error', { code: 'AUTH_ERROR', message: 'Not authenticated' });
+        return;
+    }
+
+    if (!documentId) {
+        socket.emit('error', { code: 'INVALID_PAYLOAD', message: 'documentId is required' });
+        return;
+    }
+
+    socket.to(`document:${documentId}`).emit('canvas-update', {
+        documentId,
+        canvasData,
+        updatedBy: {
+            userId: user.userId,
+            email: user.email,
+            name: user.name || user.email,
+        },
+    });
+}
+
 // ============================================================================
 // Main Socket Handler Setup
 // ============================================================================
@@ -363,6 +455,18 @@ export function setupSocketHandlers(io: Server, socket: Socket): void {
 
     socket.on('document-update', (payload: { documentId: string; content: any }) => {
         handleDocumentUpdate(io, socket, payload);
+    });
+
+    socket.on('join-slide', (payload: { slideId: string }) => {
+        handleJoinSlide(socket, payload);
+    });
+
+    socket.on('slide-update', (payload: { slideId: string; title?: string; content?: string }) => {
+        handleSlideUpdate(socket, payload);
+    });
+
+    socket.on('canvas-update', (payload: { documentId: string; canvasData: string }) => {
+        handleCanvasUpdate(socket, payload);
     });
 
     // Organization events

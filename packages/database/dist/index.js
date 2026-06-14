@@ -18,7 +18,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaClient = void 0;
+exports.checkDatabaseHealth = exports.initializeDatabase = exports.PrismaClient = void 0;
 exports.getPrismaClient = getPrismaClient;
 exports.disconnectPrisma = disconnectPrisma;
 const client_1 = require("@prisma/client");
@@ -47,4 +47,7 @@ async function disconnectPrisma() {
         prisma = undefined;
     }
 }
+var bootstrap_1 = require("./bootstrap");
+Object.defineProperty(exports, "initializeDatabase", { enumerable: true, get: function () { return bootstrap_1.initializeDatabase; } });
+Object.defineProperty(exports, "checkDatabaseHealth", { enumerable: true, get: function () { return bootstrap_1.checkDatabaseHealth; } });
 //# sourceMappingURL=index.js.map

@@ -145,9 +145,33 @@ app.use('/auth', createProxyMiddleware({
             }
             logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}/auth | ClientIP: ${clientIp}`);
         },
+        proxyRes: (proxyRes, req, res) => {
+            if (proxyRes.statusCode === 429) {
+                logger.warn(`Auth upstream returned 429 for ${req.method} ${req.originalUrl} — likely Render rate limiting during cold start or redeploy`);
+            }
+        },
         error: (err, req, res) => {
             logger.error(`Auth Proxy Error: ${err.message}`);
             (res as any).status(502).json({ error: 'Bad Gateway', message: 'Auth Service unavailable' });
+        }
+    }
+} as any) as unknown as express.RequestHandler);
+
+// Org Service Proxy (also accepts legacy /organizations prefix)
+app.use('/organizations', createProxyMiddleware({
+    target: config.services.org.url,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/organizations/me': '/me',
+        '^/organizations': '',
+    },
+    on: {
+        proxyReq: (proxyReq, req, res) => {
+            logger.info(`Proxying Organizations Request: ${req.method} ${req.originalUrl} -> ${config.services.org.url}`);
+        },
+        error: (err, req, res) => {
+            logger.error(`Organizations Proxy Error: ${err.message}`);
+            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Org Service unavailable' });
         }
     }
 } as any) as unknown as express.RequestHandler);
@@ -335,13 +359,7 @@ app.listen(config.port, () => {
     logger.info(`Proxying /collab -> ${config.services.collab.url}`);
     logger.info(`Proxying /ai -> ${config.services.ai.url}`);
     logger.info(`Proxying /documents -> ${config.services.docs.url}`);
-
-    // Perform initial connectivity checks with a stagger
-    setTimeout(() => checkServiceHealth('Auth Service', config.services.auth.url), 1000);
-    setTimeout(() => checkServiceHealth('Org Service', config.services.org.url), 2000);
-    setTimeout(() => checkServiceHealth('Collab Service', config.services.collab.url), 3000);
-    setTimeout(() => checkServiceHealth('AI Service', config.services.ai.url), 4000);
-    setTimeout(() => checkServiceHealth('Docs Service', config.services.docs.url), 5000);
+    logger.info('Startup health checks disabled to avoid Render 429 rate limits during redeploy. Use GET /debug-network for manual checks.');
 });
 
 

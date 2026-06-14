@@ -112,7 +112,7 @@ export default function DocumentsPage() {
             variant="ghost"
             size="icon"
             disabled
-            title="Filtering coming soon"
+            title="Filtering is not available yet"
             className="opacity-50 cursor-not-allowed"
           >
             <Filter className="w-4 h-4" />

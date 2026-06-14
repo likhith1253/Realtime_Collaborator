@@ -18,7 +18,7 @@ const health_1 = require("./health");
 const routes_1 = __importDefault(require("./routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 // Initialize Prisma Client
-const prisma = new database_1.PrismaClient();
+const prisma = (0, database_1.getPrismaClient)();
 const app = (0, express_1.default)();
 // Security middleware
 app.use((0, helmet_1.default)());
@@ -39,7 +39,9 @@ app.use(express_1.default.json());
 // Request logging
 app.use((0, morgan_1.default)('combined'));
 // Health check endpoint (no auth required)
-app.get('/health', health_1.healthCheck);
+app.get('/health', (req, res) => {
+    void (0, health_1.healthCheck)(req, res);
+});
 // Mount API routes
 app.use('/', routes_1.default);
 // Error handling middleware (must be last)
@@ -61,11 +63,15 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
  */
 const startServer = async () => {
     try {
-        // Verify database connection
-        await prisma.$connect();
-        logger_1.logger.info('Connected to database');
+        const dbStatus = await (0, database_1.initializeDatabase)('document-service');
+        if (!dbStatus.connected) {
+            logger_1.logger.error('Failed to start server:', dbStatus.error);
+            process.exit(1);
+        }
         app.listen(config_1.config.port, () => {
             logger_1.logger.info(`Document Service running on port ${config_1.config.port}`);
+            logger_1.logger.info(`Database host: ${dbStatus.host}:${dbStatus.port}`);
+            logger_1.logger.info('Registered routes: /projects, /documents, /presentations, /slides, /canvas, /invites, /organizations');
         });
     }
     catch (error) {

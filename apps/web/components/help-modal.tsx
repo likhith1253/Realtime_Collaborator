@@ -54,7 +54,7 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
                                 <Play className="w-8 h-8" />
                                 <div>
                                     <p className="font-medium text-foreground">Demo Video</p>
-                                    <p className="text-sm">Demo video coming soon</p>
+                                    <p className="text-sm">Demo video unavailable right now</p>
                                 </div>
                             </div>
                         </section>

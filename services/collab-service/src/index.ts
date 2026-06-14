@@ -21,6 +21,7 @@ import { healthCheck } from './health';
 import { verifyAccessToken, extractTokenFromHandshake } from './utils/jwt';
 import { AuthenticationError } from './utils/AppErrors';
 import * as collabHandler from './handlers/collab.handler';
+import { disconnectPrisma, initializeDatabase } from '@collab/database';
 
 // ============================================================================
 // Express App Setup
@@ -56,7 +57,9 @@ app.use(morgan('combined'));
 // Routes
 // ============================================================================
 
-app.get('/health', healthCheck);
+app.get('/health', (req, res) => {
+    void healthCheck(req, res);
+});
 
 // ============================================================================
 // Socket.io Authentication Middleware
@@ -117,10 +120,20 @@ io.on('connection', (socket) => {
 
 const startServer = async () => {
     try {
+        const dbStatus = await initializeDatabase('collab-service');
+
+        if (!dbStatus.connected) {
+            logger.error(`Failed to start server: ${dbStatus.error}`);
+            process.exit(1);
+        }
+
         server.listen(config.port, () => {
             logger.info(`Collab Service (Socket.io) running on port ${config.port}`);
             logger.info(`Environment: ${config.nodeEnv}`);
             logger.info(`WebSocket path: /socket.io`);
+            logger.info(`Collab service URL target: ${process.env.COLLAB_SERVICE_URL || 'local'}`);
+            logger.info(`Database host: ${dbStatus.host}:${dbStatus.port}`);
+            logger.info('Registered events: join-document, leave-document, yjs-update, join-organization');
         });
     } catch (error) {
         logger.error('Failed to start server:', error);
@@ -147,6 +160,7 @@ const shutdown = async (signal: string) => {
 
     // Save pending documents and cleanup
     await collabHandler.shutdown();
+    await disconnectPrisma();
 
     logger.info('Graceful shutdown complete');
     process.exit(0);

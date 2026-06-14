@@ -29,6 +29,7 @@ import {
 import { useAuth } from '@/lib/auth-context'
 import { useParams } from 'next/navigation'
 import { ChatInterface } from './chat/chat-interface'
+import { AIAssistant } from './ai-assistant'
 
 // Portal wrapper for dropdowns
 function DropdownPortal({ children, isOpen }: { children: React.ReactNode; isOpen: boolean }) {
@@ -223,14 +224,11 @@ export function Topbar() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="fixed z-[9999] px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl"
+          className="fixed z-[9999] w-96 h-[520px] bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden"
           style={{ top: panelPosition.top, right: panelPosition.right }}
           data-topbar-panel="ai"
         >
-          <p className="flex items-center gap-2 text-sm text-white whitespace-nowrap">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            AI assistant coming soon
-          </p>
+          <AIAssistant />
         </motion.div>
       </DropdownPortal>
 

@@ -8,22 +8,22 @@ import { createLogger } from '@packages/logger';
 const logger = createLogger('billing-controller');
 const prisma = getPrismaClient();
 
-if (!process.env.STRIPE_SECRET_KEY) {
+if (!config.stripeSecretKey) {
     logger.error('STRIPE_SECRET_KEY is not defined');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+const stripe = new Stripe(config.stripeSecretKey || '', {
     apiVersion: '2023-10-16' as any,
 });
 
 const PLANS = {
     'pro-monthly': {
         name: 'Pro',
-        priceId: 'price_1QjXXXXXX' // TODO: Replace with real price ID or fetch dynamically
+        priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_1QjXXXXXX'
     },
     'team-monthly': {
         name: 'Team',
-        priceId: 'price_1QjYYYYYY' // TODO: Replace with real price ID
+        priceId: process.env.STRIPE_TEAM_PRICE_ID || 'price_1QjYYYYYY'
     }
 };
 
@@ -68,14 +68,14 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
             payment_method_types: ['card'],
             line_items: [
                 {
-                    price: planId, // Assuming planId is the Stripe Price ID sent from frontend
+                    price: planId,
                     quantity: 1,
                 },
             ],
             metadata: {
                 organizationId: organization.id
             },
-            success_url: successUrl || `${config.clientUrl}/billing/success`, // Fallback
+            success_url: successUrl || `${config.clientUrl}/billing/success`,
             cancel_url: cancelUrl || `${config.clientUrl}/billing/cancel`,
         });
 
@@ -89,12 +89,15 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
 
 export const handleWebhook = async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = config.stripeWebhookSecret;
 
     let event: Stripe.Event;
 
     try {
-        if (!sig || !webhookSecret) throw new Error('Missing Stripe signature or secret');
+        if (!sig || !webhookSecret) {
+            logger.error('Missing Stripe signature or webhook secret');
+            throw new Error('Missing Stripe signature or secret');
+        }
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err: any) {
         logger.error(`Webhook Error: ${err.message}`);
@@ -112,7 +115,6 @@ export const handleWebhook = async (req: Request, res: Response) => {
                         where: { id: organizationId },
                         data: {
                             subscription_status: 'active' as string,
-                            // We ideally fetch subscription details to get plan info
                         }
                     });
                     logger.info(`Subscription activated for org ${organizationId}`);
@@ -124,7 +126,6 @@ export const handleWebhook = async (req: Request, res: Response) => {
                 const subscription = event.data.object as Stripe.Subscription;
                 const customerId = subscription.customer as string;
 
-                // Find org by customer ID
                 const org = await prisma.organization.findFirst({
                     where: { stripe_customer_id: customerId }
                 });
@@ -137,7 +138,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
                             current_period_end: new Date((subscription as any).current_period_end * 1000)
                         }
                     });
-                    logger.info(`Subscription updated for org ${org.id} to ${subscription.status} `);
+                    logger.info(`Subscription updated for org ${org.id} to ${subscription.status}`);
                 }
                 break;
             }
