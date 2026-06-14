@@ -15,6 +15,10 @@ console.log('API Gateway: Creating app...');
 const app = express();
 const logger = createLogger('api-gateway');
 
+// Trust proxy - Required for Render/Vercel to get correct client IP
+// This allows Express to trust the X-Forwarded-* headers set by Render's proxy
+app.set('trust proxy', true);
+
 // Connectivity Check Function
 const checkServiceHealth = async (name: string, url: string) => {
     try {
@@ -129,11 +133,17 @@ app.use('/ai', createProxyMiddleware({
 
 // Auth Service Proxy
 app.use('/auth', createProxyMiddleware({
-    target: `${config.services.auth.url}/auth`,
+    target: config.services.auth.url,
     changeOrigin: true,
     on: {
         proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}/auth`);
+            
+            const clientIp = req.ip || req.socket.remoteAddress;
+            if (clientIp) {
+                proxyReq.setHeader('X-Forwarded-For', clientIp);
+                proxyReq.setHeader('X-Real-IP', clientIp);
+            }
+            logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}/auth | ClientIP: ${clientIp}`);
         },
         error: (err, req, res) => {
             logger.error(`Auth Proxy Error: ${err.message}`);
@@ -333,4 +343,5 @@ app.listen(config.port, () => {
     setTimeout(() => checkServiceHealth('AI Service', config.services.ai.url), 4000);
     setTimeout(() => checkServiceHealth('Docs Service', config.services.docs.url), 5000);
 });
+
 

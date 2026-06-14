@@ -11,11 +11,18 @@ const prisma = new PrismaClient();
 
 export class AuthController {
     async register(req: Request, res: Response) {
+        const requestId = (req as any).requestId || 'unknown';
+        const clientIp = req.ip || 'unknown';
+        const email = req.body?.email || 'no-email';
+        
         try {
+            console.log(`[AuthController] Register attempt - RequestID: ${requestId}, IP: ${clientIp}, Email: ${email}`);
             const validatedData = RegisterSchema.parse(req.body);
             const result = await authService.register(validatedData);
+            console.log(`[AuthController] Register success - RequestID: ${requestId}, Email: ${email}`);
             res.status(201).json(result);
         } catch (error: any) {
+            console.log(`[AuthController] Register failed - RequestID: ${requestId}, Email: ${email}, Error: ${error.message}`);
             if (error.name === 'ZodError') {
                 res.status(400).json({ error: error.errors });
             } else {

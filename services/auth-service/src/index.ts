@@ -17,9 +17,23 @@ logger.info('Auth Service: Logger initialized');
 const app = express();
 const prisma = getPrismaClient();
 
-// Pre-Middleware Logger - Log every single request hitting the server
+// Trust proxy - Required for Render/Vercel to get correct client IP
+// This allows Express to trust the X-Forwarded-* headers set by Render's proxy
+app.set('trust proxy', true);
+
+// Pre-Middleware Logger - Log every single request hitting the server with detailed diagnostics
 app.use((req, res, next) => {
-    logger.info(`[Incoming] ${req.method} ${req.url} from ${req.ip}`);
+    const requestId = Math.random().toString(36).substring(7);
+    const timestamp = new Date().toISOString();
+    const clientIp = req.ip;
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const forwarded = req.headers['x-forwarded'];
+    const realIp = req.headers['x-real-ip'];
+    
+    logger.info(`[Incoming] RequestID: ${requestId} | Time: ${timestamp} | Method: ${req.method} | URL: ${req.url} | ClientIP: ${clientIp} | X-Forwarded-For: ${forwardedFor} | X-Forwarded: ${forwarded} | X-Real-IP: ${realIp}`);
+    
+    // Attach request ID to request for tracking
+    (req as any).requestId = requestId;
     next();
 });
 

@@ -89,12 +89,20 @@ function SignUpForm() {
       return
     }
 
+    // Prevent duplicate submissions
+    if (loading || authLoading) {
+      console.log('[SignUpForm] Submission blocked - already loading')
+      return
+    }
+
     setLoading(true)
     try {
+      console.log('[SignUpForm] Starting registration submission')
       await register(email, password, fullName, organizationName, inviteToken || undefined)
       // Redirect to dashboard on success
       router.push('/dashboard')
     } catch (err) {
+      console.error('[SignUpForm] Registration error:', err)
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
