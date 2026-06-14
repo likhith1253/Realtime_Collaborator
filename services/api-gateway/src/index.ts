@@ -135,15 +135,17 @@ app.use('/ai', createProxyMiddleware({
 app.use('/auth', createProxyMiddleware({
     target: config.services.auth.url,
     changeOrigin: true,
+    pathRewrite: {
+        '^/auth': '', // Strip /auth prefix - auth service mounts at /auth internally
+    },
     on: {
         proxyReq: (proxyReq, req, res) => {
-            
             const clientIp = req.ip || req.socket.remoteAddress;
             if (clientIp) {
                 proxyReq.setHeader('X-Forwarded-For', clientIp);
                 proxyReq.setHeader('X-Real-IP', clientIp);
             }
-            logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}/auth | ClientIP: ${clientIp}`);
+            logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}${req.path} | ClientIP: ${clientIp}`);
         },
         proxyRes: (proxyRes, req, res) => {
             if (proxyRes.statusCode === 429) {
