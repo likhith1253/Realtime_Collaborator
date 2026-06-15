@@ -9,7 +9,13 @@ const logger = createLogger('auth-service');
  * Get client IP from request, accounting for proxy headers
  * This is critical for rate limiting to work correctly behind Render/Vercel proxies
  */
-function getClientIp(req: Request): string {
+export function resolveClientIp(req: Request): string {
+    // 1. Priority: Try our custom trusted header from API Gateway
+    const originalClientIp = req.headers['x-original-client-ip'];
+    if (originalClientIp) {
+        return Array.isArray(originalClientIp) ? originalClientIp[0].trim() : originalClientIp.trim();
+    }
+
     // Try X-Forwarded-For header (set by API Gateway)
     const forwardedFor = req.headers['x-forwarded-for'];
     if (forwardedFor) {
@@ -40,14 +46,16 @@ export const registerRateLimiter = rateLimit({
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     keyGenerator: (req: Request) => {
-        const ip = getClientIp(req);
+        const ip = resolveClientIp(req);
         const email = req.body?.email || 'no-email';
         const key = `register:${ip}:${email}`;
-        logger.info(`[RateLimit] Generated key for registration: ${key}`);
+        const requestId = (req as any).requestId || 'unknown';
+        (req as any).rateLimitKey = key;
+        logger.info(`[RateLimit] Generated key for registration: ${key} | RequestID: ${requestId} | IP: ${ip}`);
         return key;
     },
     handler: (req: Request, res: Response, next: NextFunction, options: any) => {
-        const ip = getClientIp(req);
+        const ip = resolveClientIp(req);
         const email = req.body?.email || 'no-email';
         logger.warn(`[RateLimit] Registration limit exceeded for IP: ${ip}, Email: ${email}`);
         
@@ -80,12 +88,14 @@ export const authRateLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
-        const ip = getClientIp(req);
+        const ip = resolveClientIp(req);
         const key = `auth:${ip}`;
+        const requestId = (req as any).requestId || 'unknown';
+        logger.info(`[RateLimit] Generated key for general auth: ${key} | RequestID: ${requestId} | IP: ${ip}`);
         return key;
     },
     handler: (req: Request, res: Response, next: NextFunction, options: any) => {
-        const ip = getClientIp(req);
+        const ip = resolveClientIp(req);
         logger.warn(`[RateLimit] General auth limit exceeded for IP: ${ip}`);
         
         res.status(429).json({

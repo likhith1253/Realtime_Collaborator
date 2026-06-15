@@ -25,6 +25,11 @@ if (missingEnvs.length > 0) {
 
 
 const nextConfig: NextConfig = {
+  env: {
+    ENABLE_DEMO_MODE: process.env.ENABLE_DEMO_MODE || 'true',
+    ENABLE_PRODUCT_TOUR: process.env.ENABLE_PRODUCT_TOUR || 'true',
+    ENABLE_GUIDED_ONBOARDING: process.env.ENABLE_GUIDED_ONBOARDING || 'true',
+  },
   async rewrites() {
     // ⚠️ Prevent infinite loops on Vercel by not rewriting to localhost in production.
     // In production, the frontend should either call the backend directly (CORS),

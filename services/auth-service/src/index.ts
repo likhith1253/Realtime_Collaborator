@@ -8,7 +8,8 @@ import { createLogger } from '@packages/logger';
 import { healthCheck } from './health';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/error.middleware';
-import { getPrismaClient, disconnectPrisma, initializeDatabase } from '@collab/database';
+import { getPrismaClient, disconnectPrisma, initializeDatabase, checkDatabaseHealth } from '@collab/database';
+import { seedDemoWorkspace } from './utils/demo-seeder';
 
 const logger = createLogger('auth-service');
 console.log('Auth Service: Starting execution...');
@@ -21,19 +22,24 @@ const prisma = getPrismaClient();
 // This allows Express to trust the X-Forwarded-* headers set by Render's proxy
 app.set('trust proxy', true);
 
+import { resolveClientIp } from './middleware/rate-limit.middleware';
+
 // Pre-Middleware Logger - Log every single request hitting the server with detailed diagnostics
 app.use((req, res, next) => {
     const requestId = Math.random().toString(36).substring(7);
     const timestamp = new Date().toISOString();
-    const clientIp = req.ip;
+    const reqIp = req.ip;
     const forwardedFor = req.headers['x-forwarded-for'];
     const forwarded = req.headers['x-forwarded'];
     const realIp = req.headers['x-real-ip'];
+    const originalClientIp = req.headers['x-original-client-ip'];
+    const resolvedIp = resolveClientIp(req);
     
-    logger.info(`[Incoming] RequestID: ${requestId} | Time: ${timestamp} | Method: ${req.method} | URL: ${req.url} | ClientIP: ${clientIp} | X-Forwarded-For: ${forwardedFor} | X-Forwarded: ${forwarded} | X-Real-IP: ${realIp}`);
+    logger.info(`[Incoming] RequestID: ${requestId} | Time: ${timestamp} | Method: ${req.method} | URL: ${req.url} | ResolvedIP: ${resolvedIp} | X-Original-Client-IP: ${originalClientIp} | X-Forwarded-For: ${forwardedFor} | req.ip: ${reqIp} | X-Real-IP: ${realIp}`);
     
     // Attach request ID to request for tracking
     (req as any).requestId = requestId;
+    (req as any).resolvedClientIp = resolvedIp;
     next();
 });
 
@@ -47,6 +53,29 @@ app.use(morgan('combined'));
 
 app.get('/health', (req, res) => {
     void healthCheck(req, res);
+});
+
+app.get('/ready', async (req, res) => {
+    const db = await checkDatabaseHealth();
+    const isReady = db.ok;
+    res.status(isReady ? 200 : 503).json({ 
+        status: isReady ? 'ready' : 'not_ready', 
+        service: 'auth-service',
+        database: isReady ? 'connected' : 'disconnected',
+        redis: 'not_configured',
+        version: '0.1.0',
+        uptime: process.uptime()
+    });
+});
+
+app.get('/live', (req, res) => {
+    res.status(200).json({ 
+        status: 'live', 
+        service: 'auth-service',
+        redis: 'not_configured',
+        version: '0.1.0',
+        uptime: process.uptime()
+    });
 });
 
 app.get('/test-debug', (req, res) => {
@@ -63,6 +92,13 @@ const startServer = async () => {
     if (!dbStatus.connected) {
         logger.error(`Failed to start server: ${dbStatus.error}`);
         process.exit(1);
+    }
+
+    // Run deployment reset/seed for Demo workspace on startup
+    try {
+        await seedDemoWorkspace(prisma);
+    } catch (err: any) {
+        logger.error(`Failed to run demo workspace startup seeding: ${err.message}`);
     }
 
     app.listen(config.port, () => {

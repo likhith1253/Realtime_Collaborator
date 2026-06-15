@@ -11,6 +11,7 @@ router.post('/register', registerRateLimiter, authController.register);
 
 // Apply general rate limiting to other auth endpoints
 router.post('/login', authRateLimiter, authController.login);
+router.post('/demo-login', authRateLimiter, authController.demoLogin);
 router.post('/refresh', authRateLimiter, authController.refresh);
 
 import { authenticate } from '../middleware/auth.middleware';

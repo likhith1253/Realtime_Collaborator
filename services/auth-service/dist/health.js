@@ -4,19 +4,17 @@ exports.healthCheck = void 0;
 const database_1 = require("@collab/database");
 const healthCheck = async (req, res) => {
     const db = await (0, database_1.checkDatabaseHealth)();
-    if (!db.ok) {
-        res.status(503).json({
-            status: 'degraded',
-            service: 'auth-service',
-            database: 'disconnected',
-            error: db.error,
-        });
-        return;
-    }
-    res.status(200).json({
-        status: 'ok',
+    const databaseStatus = db.ok ? 'connected' : 'disconnected';
+    const redisStatus = 'not_configured'; // Redis is not used in the stack
+    const isOk = db.ok;
+    res.status(isOk ? 200 : 503).json({
+        status: isOk ? 'ok' : 'degraded',
         service: 'auth-service',
-        database: 'connected',
+        database: databaseStatus,
+        redis: redisStatus,
+        version: '0.1.0',
+        uptime: process.uptime(),
+        ...(db.error ? { error: db.error } : {})
     });
 };
 exports.healthCheck = healthCheck;

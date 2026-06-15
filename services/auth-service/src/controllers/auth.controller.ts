@@ -11,17 +11,19 @@ const prisma = getPrismaClient();
 export class AuthController {
     async register(req: Request, res: Response) {
         const requestId = (req as any).requestId || 'unknown';
-        const clientIp = req.ip || 'unknown';
+        const clientIp = (req as any).resolvedClientIp || req.ip || 'unknown';
         const email = req.body?.email || 'no-email';
+        const rateLimitKey = (req as any).rateLimitKey || 'unknown';
+        const remainingRequests = (req as any).rateLimit ? (req as any).rateLimit.remaining : 'unknown';
         
         try {
-            console.log(`[AuthController] Register attempt - RequestID: ${requestId}, IP: ${clientIp}, Email: ${email}`);
+            console.log(`[AuthController] Register attempt - RequestID: ${requestId}, ResolvedIP: ${clientIp}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}`);
             const validatedData = RegisterSchema.parse(req.body);
             const result = await authService.register(validatedData);
-            console.log(`[AuthController] Register success - RequestID: ${requestId}, Email: ${email}`);
+            console.log(`[AuthController] Register success - RequestID: ${requestId}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}`);
             res.status(201).json(result);
         } catch (error: any) {
-            console.log(`[AuthController] Register failed - RequestID: ${requestId}, Email: ${email}, Error: ${error.message}`);
+            console.log(`[AuthController] Register failed - RequestID: ${requestId}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}, Error: ${error.message}`);
             if (error.name === 'ZodError') {
                 res.status(400).json({ error: error.errors });
             } else {
@@ -42,6 +44,19 @@ export class AuthController {
             } else {
                 res.status(401).json({ error: error.message });
             }
+        }
+    }
+
+    async demoLogin(req: Request, res: Response) {
+        try {
+            if (process.env.ENABLE_DEMO_MODE !== 'true') {
+                res.status(403).json({ error: 'Demo mode is disabled via feature flag.' });
+                return;
+            }
+            const result = await authService.demoLogin();
+            res.status(200).json(result);
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -99,6 +114,13 @@ export class AuthController {
             const user = (req as any).user;
             if (!user) {
                 res.status(401).json({ error: 'Not authenticated' });
+                return;
+            }
+
+            // Check if demo user
+            const dbUserBefore = await prisma.user.findUnique({ where: { id: user.userId } });
+            if (dbUserBefore?.email === 'demo@realtimecollaborator.com') {
+                res.status(403).json({ error: 'The profile of the Demo Account is protected and cannot be updated.' });
                 return;
             }
 

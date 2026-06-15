@@ -35,6 +35,28 @@ const checkServiceHealth = async (name: string, url: string) => {
 };
 console.log('API Gateway: Logger created');
 
+// Pre-middleware to resolve Client IP and Request ID early
+app.use((req: any, res, next) => {
+    const clientIp = req.headers['cf-connecting-ip'] || 
+                     req.headers['x-original-client-ip'] || 
+                     req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || 
+                     req.headers['x-real-ip'] || 
+                     req.ip || 
+                     req.socket.remoteAddress || 
+                     'unknown';
+                     
+    const requestId = req.headers['x-request-id'] || Math.random().toString(36).substring(7);
+    
+    req.resolvedClientIp = clientIp;
+    req.requestId = requestId;
+    
+    // Set headers on incoming req so downstream middleware sees them
+    req.headers['x-original-client-ip'] = clientIp;
+    req.headers['x-request-id'] = requestId;
+    
+    next();
+});
+
 // Middleware
 app.use(helmet());
 app.use(cors({
@@ -43,9 +65,54 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 
-// Health Check
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', service: 'api-gateway' });
+// Health Checks
+app.get('/health', async (req, res) => {
+    let databaseStatus = 'disconnected';
+    let redisStatus = 'not_configured';
+    let authServiceStatus = 'down';
+
+    try {
+        const response = await fetch(`${config.services.auth.url}/health`);
+        if (response.ok) {
+            const data: any = await response.json();
+            authServiceStatus = 'up';
+            databaseStatus = data.database || 'unknown';
+            redisStatus = data.redis || 'not_configured';
+        }
+    } catch (error: any) {
+        logger.error(`Health check failed to contact Auth Service: ${error.message}`);
+    }
+
+    const isOk = authServiceStatus === 'up' && databaseStatus === 'connected';
+    res.status(isOk ? 200 : 503).json({
+        status: isOk ? 'ok' : 'degraded',
+        service: 'api-gateway',
+        database: databaseStatus,
+        redis: redisStatus,
+        version: '1.0.0',
+        uptime: process.uptime(),
+        details: {
+            authService: authServiceStatus
+        }
+    });
+});
+
+app.get('/ready', (req, res) => {
+    res.status(200).json({ 
+        status: 'ready', 
+        service: 'api-gateway',
+        version: '1.0.0',
+        uptime: process.uptime()
+    });
+});
+
+app.get('/live', (req, res) => {
+    res.status(200).json({ 
+        status: 'live', 
+        service: 'api-gateway',
+        version: '1.0.0',
+        uptime: process.uptime()
+    });
 });
 
 // Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
@@ -80,8 +147,7 @@ app.get('/debug-network', async (req, res) => {
 
         try {
             const start = Date.now();
-            // Use specific endpoints for health check if available, otherwise just root
-            const healthUrl = svc.key === 'auth' ? `${svc.url}/health` : `${svc.url}/health`;
+            const healthUrl = `${svc.url}/health`;
 
             // 3 second timeout using AbortController
             const controller = new AbortController();
@@ -116,169 +182,108 @@ app.get('/debug-network', async (req, res) => {
     res.json(results);
 });
 
-// AI Service Proxy
-app.use('/ai', createProxyMiddleware({
-    target: `${config.services.ai.url}/ai`,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying AI Request: ${req.method} ${req.originalUrl} -> ${config.services.ai.url}`);
-        },
-        error: (err, req, res) => {
-            logger.error(`AI Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'AI Service unavailable' });
-        }
-    }
-} as any) as unknown as express.RequestHandler);
+// Helper for standard proxy config to avoid boilerplate and enforce tracing
+const getProxyOptions = (targetUrl: string, serviceName: string, overrides: Partial<Options> = {}): Options => {
+    return {
+        target: targetUrl,
+        changeOrigin: true,
+        ...overrides,
+        on: {
+            proxyReq: (proxyReq, req: any, res) => {
+                const clientIp = req.resolvedClientIp || 'unknown';
+                const requestId = req.requestId || 'unknown';
 
-// Auth Service Proxy
-app.use('/auth', createProxyMiddleware({
-    target: config.services.auth.url,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            const clientIp = req.ip || req.socket.remoteAddress;
-            if (clientIp) {
                 proxyReq.setHeader('X-Forwarded-For', clientIp);
                 proxyReq.setHeader('X-Real-IP', clientIp);
+                proxyReq.setHeader('X-Original-Client-IP', clientIp);
+                proxyReq.setHeader('X-Request-ID', requestId);
+
+                if (overrides.on?.proxyReq) {
+                    (overrides.on.proxyReq as any)(proxyReq, req, res);
+                } else {
+                    logger.info(`Proxying ${serviceName} Request: ${req.method} ${req.originalUrl} -> ${targetUrl}${req.path} | ClientIP: ${clientIp} | RequestID: ${requestId}`);
+                }
+            },
+            proxyRes: (proxyRes, req: any, res) => {
+                if (proxyRes.statusCode === 429) {
+                    logger.warn(`${serviceName} upstream returned 429 for ${req.method} ${req.originalUrl}`);
+                }
+                if (overrides.on?.proxyRes) {
+                    overrides.on.proxyRes(proxyRes, req, res);
+                }
+            },
+            error: (err, req, res) => {
+                logger.error(`${serviceName} Proxy Error: ${err.message}`);
+                if (overrides.on?.error) {
+                    overrides.on.error(err, req, res);
+                } else {
+                    (res as any).status(502).json({ error: 'Bad Gateway', message: `${serviceName} Service unavailable` });
+                }
             }
-            logger.info(`Proxying Auth Request: ${req.method} ${req.originalUrl} -> ${config.services.auth.url}${req.originalUrl} | ClientIP: ${clientIp}`);
-        },
-        proxyRes: (proxyRes, req, res) => {
-            if (proxyRes.statusCode === 429) {
-                logger.warn(`Auth upstream returned 429 for ${req.method} ${req.originalUrl} — likely Render rate limiting during cold start or redeploy`);
-            }
-        },
-        error: (err, req, res) => {
-            logger.error(`Auth Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Auth Service unavailable' });
         }
-    }
-} as any) as unknown as express.RequestHandler);
+    } as any;
+};
+
+// AI Service Proxy
+app.use('/ai', createProxyMiddleware(getProxyOptions(`${config.services.ai.url}/ai`, 'AI')) as unknown as express.RequestHandler);
+
+// Auth Service Proxy
+app.use('/auth', createProxyMiddleware(getProxyOptions(config.services.auth.url, 'Auth')) as unknown as express.RequestHandler);
 
 // Org Service Proxy (also accepts legacy /organizations prefix)
-app.use('/organizations', createProxyMiddleware({
-    target: config.services.org.url,
-    changeOrigin: true,
+app.use('/organizations', createProxyMiddleware(getProxyOptions(config.services.org.url, 'Organizations', {
     pathRewrite: {
         '^/organizations/me': '/me',
         '^/organizations': '',
-    },
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Organizations Request: ${req.method} ${req.originalUrl} -> ${config.services.org.url}`);
-        },
-        error: (err, req, res) => {
-            logger.error(`Organizations Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Org Service unavailable' });
-        }
     }
-} as any) as unknown as express.RequestHandler);
+})) as unknown as express.RequestHandler);
 
 // Org Service Proxy
-app.use('/orgs', createProxyMiddleware({
-    target: config.services.org.url,
-    changeOrigin: true,
+app.use('/orgs', createProxyMiddleware(getProxyOptions(config.services.org.url, 'Org', {
     on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Org Request: ${req.method} ${req.originalUrl} -> ${config.services.org.url}`);
-        },
-        proxyRes: (proxyRes, req, res) => {
+        proxyRes: (proxyRes) => {
             delete proxyRes.headers['access-control-allow-origin'];
             delete proxyRes.headers['access-control-allow-credentials'];
             delete proxyRes.headers['access-control-allow-methods'];
             delete proxyRes.headers['access-control-allow-headers'];
-        },
-        error: (err, req, res) => {
-            logger.error(`Org Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Org Service unavailable' });
         }
     }
-} as any) as unknown as express.RequestHandler);
+})) as unknown as express.RequestHandler);
 
 // Billing Service Proxy (Consolidated)
-app.use('/billing', createProxyMiddleware({
-    target: `${config.services.org.url}/billing`,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Billing Request: ${req.method} ${req.originalUrl} -> ${config.services.org.url}/billing`);
-        },
-        error: (err, req, res) => {
-            logger.error(`Billing Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Billing Service unavailable' });
-        }
-    }
-} as any) as unknown as express.RequestHandler);
+app.use('/billing', createProxyMiddleware(getProxyOptions(`${config.services.org.url}/billing`, 'Billing')) as unknown as express.RequestHandler);
 
 // Document Service Proxy - Projects
-const projectsProxy = createProxyMiddleware({
-    target: `${config.services.docs.url}/projects`,
-    changeOrigin: true,
+app.use('/projects', createProxyMiddleware(getProxyOptions(`${config.services.docs.url}/projects`, 'Projects', {
     on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Projects Request: ${req.method} ${req.path} -> ${config.services.docs.url}/projects`);
-        },
-        proxyRes: (proxyRes, req, res) => {
+        proxyRes: (proxyRes) => {
             delete proxyRes.headers['access-control-allow-origin'];
             delete proxyRes.headers['access-control-allow-credentials'];
-        },
-        error: (err, req, res) => {
-            logger.error(`Projects Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Document Service unavailable' });
         }
     }
-} as any) as unknown as express.RequestHandler;
+})) as unknown as express.RequestHandler);
 
 // Document Service Proxy - Documents
-const documentsProxy = createProxyMiddleware({
-    target: `${config.services.docs.url}/documents`,
-    changeOrigin: true,
+app.use('/documents', createProxyMiddleware(getProxyOptions(`${config.services.docs.url}/documents`, 'Documents', {
     on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Documents Request: ${req.method} ${req.path} -> ${config.services.docs.url}/documents`);
-        },
-        proxyRes: (proxyRes, req, res) => {
+        proxyRes: (proxyRes) => {
             delete proxyRes.headers['access-control-allow-origin'];
             delete proxyRes.headers['access-control-allow-credentials'];
-        },
-        error: (err, req, res) => {
-            logger.error(`Documents Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Document Service unavailable' });
         }
     }
-} as any) as unknown as express.RequestHandler;
+})) as unknown as express.RequestHandler);
 
 // Document Service Proxy - Slides
-const slidesProxy = createProxyMiddleware({
-    target: `${config.services.docs.url}/slides`,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Slides Request: ${req.method} ${req.path} -> ${config.services.docs.url}/slides`);
-        },
-        error: (err, req, res) => {
-            logger.error(`Slides Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Document Service unavailable' });
-        }
-    }
-} as any) as unknown as express.RequestHandler;
+app.use('/slides', createProxyMiddleware(getProxyOptions(`${config.services.docs.url}/slides`, 'Slides')) as unknown as express.RequestHandler);
 
 // Document Service Proxy - Canvas
-const canvasProxy = createProxyMiddleware({
-    target: `${config.services.docs.url}`,
-    changeOrigin: true,
+app.use('/canvas', createProxyMiddleware(getProxyOptions(config.services.docs.url, 'Canvas', {
     pathRewrite: {
         '^/canvas/projects': '/projects',
         '^/canvas/canvas': '/canvas',
         '^/canvas': '/canvas'
-    },
-});
-
-app.use('/projects', projectsProxy);
-app.use('/documents', documentsProxy);
-app.use('/slides', slidesProxy);
-app.use('/canvas', canvasProxy);
+    }
+})) as unknown as express.RequestHandler);
 
 // Add error handling for canvas routes that return HTML
 app.use('/canvas/*', (req, res, next) => {
@@ -292,57 +297,25 @@ app.use('/canvas/*', (req, res, next) => {
 });
 
 // Document Service Proxy - Invites
-app.use('/invites', createProxyMiddleware({
-    target: config.services.docs.url,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Invites Request: ${req.method} ${req.originalUrl} -> ${config.services.docs.url}`);
-        },
-        error: (err, req, res) => {
-            logger.error(`Invites Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Document Service unavailable' });
-        }
-    }
-} as any) as unknown as express.RequestHandler);
+app.use('/invites', createProxyMiddleware(getProxyOptions(config.services.docs.url, 'Invites')) as unknown as express.RequestHandler);
 
 // Document Service Proxy - Presentations
-app.use('/presentations', createProxyMiddleware({
-    target: `${config.services.docs.url}/presentations`,
-    changeOrigin: true,
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            logger.info(`Proxying Presentations Request: ${req.method} ${req.path} -> ${config.services.docs.url}/presentations`);
-        },
-        error: (err, req, res) => {
-            logger.error(`Presentations Proxy Error: ${err.message}`);
-            (res as any).status(502).json({ error: 'Bad Gateway', message: 'Document Service unavailable' });
-        }
-    }
-} as any) as unknown as express.RequestHandler);
+app.use('/presentations', createProxyMiddleware(getProxyOptions(`${config.services.docs.url}/presentations`, 'Presentations')) as unknown as express.RequestHandler);
 
 // Collab Service Proxy
-app.use('/collab', createProxyMiddleware({
-    target: config.services.collab?.url || 'http://localhost:3003',
-    changeOrigin: true,
-} as any) as unknown as express.RequestHandler);
+app.use('/collab', createProxyMiddleware(getProxyOptions(config.services.collab?.url || 'http://localhost:3003', 'Collab')) as unknown as express.RequestHandler);
 
 // Socket.io Proxy
-app.use('/socket.io', createProxyMiddleware({
-    target: config.services.collab?.url || 'http://localhost:3003',
-    changeOrigin: true,
+app.use('/socket.io', createProxyMiddleware(getProxyOptions(config.services.collab?.url || 'http://localhost:3003', 'Socket.io', {
     ws: true,
     on: {
-        proxyReq: (proxyReq, req, res) => {
+        proxyReq: (proxyReq, req: any) => {
             if (!req.url.includes('transport=websocket')) {
                 logger.info(`Proxying Socket.io: ${req.url}`);
             }
-        },
-        error: (err, req, res) => {
-            logger.error(`Socket Proxy Error: ${err.message}`);
         }
     }
-} as any) as unknown as express.RequestHandler);
+})) as unknown as express.RequestHandler);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

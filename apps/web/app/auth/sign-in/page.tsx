@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { AlertCircle, ArrowRight } from 'lucide-react'
+import { AlertCircle, ArrowRight, Compass } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,45 +14,15 @@ import { Logo } from '@/components/logo'
 
 export default function SignInPage() {
   const router = useRouter()
-  const { login, loading: authLoading, isAuthenticated } = useAuth()
+  const { login, demoLogin, loading: authLoading, isAuthenticated } = useAuth()
 
-  const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'kevin@gmail.com' : '')
-  const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'Kevin1234' : '')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [loginAttempted, setLoginAttempted] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
-  // Dev-only auto-login
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && !isAuthenticated && !loading && !loginAttempted) {
-      // Small delay to ensure hydration
-      const timer = setTimeout(() => {
-        const autoLogin = async () => {
-          setLoading(true)
-          try {
-            await login('kevin@gmail.com', 'Kevin1234')
-            setLoginAttempted(true)
-          } catch (e) {
-            console.error('Auto-login failed', e)
-            setLoading(false)
-          }
-        }
-        autoLogin()
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [])
-
-
-  // Navigate to dashboard once authenticated after login attempt
-  useEffect(() => {
-    if (loginAttempted && isAuthenticated && !authLoading) {
-      console.log('[SignIn] Auth confirmed, navigating to dashboard')
-      router.replace('/dashboard')
-    }
-  }, [loginAttempted, isAuthenticated, authLoading, router])
-
-  // Also redirect if already authenticated on mount
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.replace('/dashboard')
@@ -71,17 +41,28 @@ export default function SignInPage() {
     setLoading(true)
     try {
       await login(email, password)
-      // Mark that login was attempted so useEffect can handle navigation
-      // once React state updates are committed
-      setLoginAttempted(true)
+      router.replace('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
       setLoading(false)
     }
   }
 
-  const isLoading = loading || authLoading
+  const handleDemoLogin = async () => {
+    setError(null)
+    setDemoLoading(true)
+    try {
+      await demoLogin()
+      router.replace('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo login failed')
+    } finally {
+      setDemoLoading(false)
+    }
+  }
 
+  const isLoading = loading || authLoading || demoLoading
 
   return (
     <motion.div
@@ -110,6 +91,32 @@ export default function SignInPage() {
         </CardHeader>
 
         <CardContent>
+          {/* Demo Access Banner */}
+          {process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-5 p-4 rounded-lg bg-accent/10 border border-accent/25 flex flex-col gap-3"
+            >
+              <div>
+                <p className="text-sm font-semibold text-accent">👋 Want a quick look?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Explore a fully pre-seeded workspace — no account needed.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={isLoading}
+                className="w-full h-10 bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 font-semibold"
+              >
+                <Compass className="w-4 h-4" />
+                {demoLoading ? 'Preparing Demo Workspace...' : 'Explore Live Demo'}
+              </Button>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Alert */}
             {error && (
@@ -148,7 +155,7 @@ export default function SignInPage() {
                 <button
                   type="button"
                   onClick={() => setError('Password reset is not available yet. Please contact your administrator.')}
-                  className="text-xs text-muted-foreground font-medium"
+                  className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -170,8 +177,8 @@ export default function SignInPage() {
               disabled={isLoading}
               className="w-full h-11 bg-accent text-accent-foreground hover:bg-accent/90 text-base font-semibold mt-6"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-              {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+              {loading ? 'Signing in...' : 'Sign In'}
+              {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
             {/* Divider */}
@@ -213,4 +220,3 @@ export default function SignInPage() {
     </motion.div>
   )
 }
-

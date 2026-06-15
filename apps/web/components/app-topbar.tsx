@@ -83,11 +83,6 @@ export function Topbar() {
       })
     }
     setActivePanel(panel)
-
-    // Auto-close AI tooltip after 2 seconds
-    if (panel === 'ai') {
-      setTimeout(() => setActivePanel(null), 2000)
-    }
   }
 
   // Close panel when clicking outside

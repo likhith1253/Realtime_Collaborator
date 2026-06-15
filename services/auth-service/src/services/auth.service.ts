@@ -4,6 +4,7 @@ import { getPrismaClient } from '@collab/database';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 // @ts-ignore - Local module resolution
 import { createLogger } from '@packages/logger';
+import { seedDemoWorkspace } from '../utils/demo-seeder';
 
 const prisma = getPrismaClient();
 const logger = createLogger('auth-service');
@@ -180,6 +181,47 @@ export class AuthService {
         return {
             token: newAccessToken,
             refresh_token: newRefreshToken,
+        };
+    }
+
+    async demoLogin() {
+        const demoEmail = 'demo@realtimecollaborator.com';
+        
+        // Auto-restore demo workspace data to known good state
+        await seedDemoWorkspace(prisma);
+        
+        const user = await prisma.user.findUnique({
+            where: { email: demoEmail },
+        });
+
+        if (!user) {
+            throw new Error('Demo user creation failed');
+        }
+
+        const payload = { userId: user.id, email: user.email, role: user.role, organizationId: user.organization_id };
+        const accessToken = signAccessToken(payload);
+        const refreshToken = signRefreshToken(payload);
+
+        logger.info(`Demo user logged in: ${user.id}`);
+
+        const organization = await prisma.organization.findUnique({
+            where: { id: user.organization_id }
+        });
+
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name,
+                role: user.role,
+                avatar_url: user.avatar_url,
+                organization_id: user.organization_id,
+                organization: organization
+                    ? { id: organization.id, name: organization.name, slug: organization.slug }
+                    : null
+            },
+            token: accessToken,
+            refresh_token: refreshToken,
         };
     }
 }

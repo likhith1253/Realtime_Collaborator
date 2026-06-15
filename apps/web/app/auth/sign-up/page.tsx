@@ -17,7 +17,7 @@ function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get('inviteToken')
-  const { register, loading: authLoading } = useAuth()
+  const { register, demoLogin, loading: authLoading } = useAuth()
 
   const [fullName, setFullName] = useState('')
   const [organizationName, setOrganizationName] = useState('')
@@ -39,13 +39,6 @@ function SignUpForm() {
           if (info) {
             setInviteInfo(info)
             setEmail(info.email)
-            // Auto-generate org name based on user name later, 
-            // or maybe just hide org input if joining a project?
-            // Actually, even if joining a project, the user still creates their own "Personal" organization technically?
-            // Or do they just join the existing one?
-            // The AuthService logic creates a new Organization for the user REGARDLESS of invite.
-            // The invite just adds them to a Project in ANOTHER organization.
-            // So they still need an organization name for their personal workspace.
           }
         } catch (err) {
           console.error("Invalid invite token", err)
@@ -110,6 +103,19 @@ function SignUpForm() {
     }
   }
 
+  const handleDemoFallback = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      await demoLogin()
+      router.push('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const isLoading = loading || authLoading || verifyingInvite
 
   return (
@@ -161,10 +167,22 @@ function SignUpForm() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                className="flex flex-col gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20"
               >
-                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-destructive">{error}</p>
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+                {process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-accent hover:text-accent/80 p-0 h-auto font-medium text-sm self-start flex items-center gap-1"
+                    onClick={handleDemoFallback}
+                  >
+                    Explore Demo Workspace Instead &rarr;
+                  </Button>
+                )}
               </motion.div>
             )}
 

@@ -20,6 +20,7 @@ interface AuthContextType {
   error: string | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
+  demoLogin: () => Promise<void>
   register: (email: string, password: string, fullName: string, organizationName: string, inviteToken?: string) => Promise<void>
   logout: () => void
   updateUser: (updates: Partial<User>) => void
@@ -172,6 +173,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const demoLogin = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log('[AuthContext] Attempting demo login to: /auth/demo-login')
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiBase}/auth/demo-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      console.log('[AuthContext] Demo Login response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Demo login failed'
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json().catch(() => {
+        throw new Error(`Invalid JSON response from server: ${response.status}`)
+      })
+
+      // Store tokens
+      setToken(data.token)
+      sessionStorage.setItem('auth_token', data.token)
+      sessionStorage.setItem('refresh_token', data.refresh_token)
+      document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`
+      document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=${7 * 24 * 60 * 60}`
+
+      // Set user
+      setUser(mapUserResponse(data.user))
+    } catch (err) {
+      console.error('[AuthContext] Demo login failed:', err)
+      const message = err instanceof Error ? err.message : 'Demo login failed'
+      setError(message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const register = async (email: string, password: string, fullName: string, organizationName: string, inviteToken?: string) => {
     setLoading(true)
     setError(null)
@@ -296,6 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     token,
     login,
+    demoLogin,
     register,
     logout,
     updateUser,

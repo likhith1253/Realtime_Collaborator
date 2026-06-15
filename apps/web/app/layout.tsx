@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
+import { DemoModal } from '@/components/demo-modal'
+import { ProductTour } from '@/components/product-tour'
 
 const _geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -45,6 +47,8 @@ export default function RootLayout({
       <body className={`${_geist.variable} ${_geistMono.variable} font-sans antialiased bg-background text-foreground`}>
         <AuthProvider>
           {children}
+          <DemoModal />
+          <ProductTour />
         </AuthProvider>
         <Analytics />
       </body>
