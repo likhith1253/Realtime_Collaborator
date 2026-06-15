@@ -79,6 +79,39 @@ export const registerRateLimiter = rateLimit({
 });
 
 /**
+ * Dedicated rate limiter for the demo login endpoint.
+ * Completely separate from authRateLimiter so normal auth traffic
+ * cannot exhaust the demo login allowance.
+ * In development: always skipped (no limits).
+ * In production: 1000 requests per minute per IP (effectively unlimited for legitimate use).
+ */
+export const demoRateLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute window
+    max: 1000, // very high limit — demo must always work
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req: Request) => {
+        // Use a fixed key so the counter is shared, not per-IP
+        // This prevents any single IP from being blocked regardless of traffic
+        return 'demo-login-global';
+    },
+    skip: () => {
+        // Always skip in development — no limits at all
+        return process.env.NODE_ENV === 'development';
+    },
+    handler: (req: Request, res: Response, next: NextFunction, options: any) => {
+        logger.warn('[RateLimit] Demo login global limit exceeded — this should never happen in normal use');
+        res.status(429).json({
+            success: false,
+            error: {
+                code: 'TOO_MANY_REQUESTS',
+                message: 'Demo service is temporarily overloaded. Please try again in a moment.',
+            }
+        });
+    }
+});
+
+/**
  * General rate limiter for all auth endpoints
  * Limits to 100 requests per IP per 15 minutes
  */

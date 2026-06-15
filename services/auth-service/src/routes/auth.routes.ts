@@ -1,7 +1,7 @@
 import { Router } from 'express';
 // @ts-ignore - Local module resolution
 import { AuthController } from '../controllers/auth.controller';
-import { registerRateLimiter, authRateLimiter } from '../middleware/rate-limit.middleware';
+import { registerRateLimiter, authRateLimiter, demoRateLimiter } from '../middleware/rate-limit.middleware';
 
 const router = Router();
 const authController = new AuthController();
@@ -11,7 +11,7 @@ router.post('/register', registerRateLimiter, authController.register);
 
 // Apply general rate limiting to other auth endpoints
 router.post('/login', authRateLimiter, authController.login);
-router.post('/demo-login', authRateLimiter, authController.demoLogin);
+router.post('/demo-login', demoRateLimiter, authController.demoLogin);
 router.post('/refresh', authRateLimiter, authController.refresh);
 
 import { authenticate } from '../middleware/auth.middleware';
