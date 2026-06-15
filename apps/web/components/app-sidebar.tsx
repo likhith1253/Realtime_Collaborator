@@ -26,13 +26,28 @@ import { ApiClient } from '@/lib/api-client'
 import { joinOrganization, onUserOnline, onUserOffline, onJoinedOrganization } from '@/lib/socket'
 import { HelpModal } from '@/components/help-modal'
 
+interface Member {
+  id: string
+  name: string
+  avatar: string
+  email: string
+}
+
+interface ApiMember {
+  user: {
+    id: string
+    full_name?: string
+    email: string
+  }
+}
+
 export function Sidebar() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [activeOrg, setActiveOrg] = React.useState('')
   const [showOrgMenu, setShowOrgMenu] = React.useState(false)
   const [projects, setProjects] = React.useState<Project[]>([])
-  const [members, setMembers] = React.useState<any[]>([])
+  const [members, setMembers] = React.useState<Member[]>([])
   const [onlineUsers, setOnlineUsers] = React.useState<Set<string>>(new Set())
   const [docCount, setDocCount] = React.useState<number | null>(null)
   const [showHelpModal, setShowHelpModal] = React.useState(false)
@@ -81,10 +96,10 @@ export function Sidebar() {
     joinOrganization(user.organization.id)
 
     // Fetch static member list
-    ApiClient.get<any>(`/orgs/${user.organization.id}`)
+    ApiClient.get<{ members: ApiMember[] }>(`/orgs/${user.organization.id}`)
       .then((data) => {
         if (data.members) {
-          const mapped = data.members.map((m: any) => ({
+          const mapped = data.members.map((m: ApiMember) => ({
             id: m.user.id,
             name: m.user.full_name || m.user.email,
             avatar: (m.user.full_name || m.user.email || '??').substring(0, 2).toUpperCase(),
