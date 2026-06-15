@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Separator } from '@/components/ui/separator'
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
+import { Logo } from '@/components/logo'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -77,8 +78,8 @@ export default function Footer() {
             {/* Logo Section */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-2 font-bold text-xl mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-                  C
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <Logo size={20} className="text-primary-foreground" />
                 </div>
                 <span>Collab</span>
               </div>

@@ -17,6 +17,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/logo'
 
 export default function DashboardLayout() {
   const [activeOrg, setActiveOrg] = useState('Design Team')
@@ -87,8 +88,8 @@ export default function DashboardLayout() {
         {/* Top: Logo & Organization Switcher */}
         <div className="p-4 border-b border-border space-y-4">
           <div className="flex items-center gap-2 font-bold">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
-              C
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Logo size={20} className="text-primary-foreground" />
             </div>
             <span>Collab</span>
           </div>

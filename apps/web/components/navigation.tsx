@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
+import { Logo } from '@/components/logo'
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -31,8 +32,8 @@ export default function Navigation() {
             whileHover={{ scale: 1.05 }}
             className="flex items-center gap-2 font-bold text-xl"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-              C
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Logo size={20} className="text-primary-foreground" />
             </div>
             <span className="hidden sm:inline">Collab</span>
           </motion.div>
