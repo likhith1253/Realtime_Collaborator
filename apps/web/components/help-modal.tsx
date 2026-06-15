@@ -39,28 +39,26 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
                 <ScrollArea className="h-[60vh] pr-4">
                     <div className="space-y-6 pb-4">
                         {/* Restart Product Tour */}
-                        {process.env.ENABLE_PRODUCT_TOUR === 'true' && (
-                            <section className="bg-accent/5 rounded-lg p-4 border border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="space-y-1">
-                                    <h4 className="font-semibold text-foreground flex items-center gap-2">
-                                        <Compass className="w-4 h-4 text-accent" />
-                                        Guided Product Tour
-                                    </h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        Restart the guided tour to walk through the main platform features.
-                                    </p>
-                                </div>
-                                <Button 
-                                    onClick={() => {
-                                        onOpenChange(false)
-                                        window.dispatchEvent(new CustomEvent('restart-tour'))
-                                    }}
-                                    className="bg-accent hover:bg-accent/90 text-accent-foreground shrink-0 font-medium"
-                                >
-                                    Restart Tour
-                                </Button>
-                            </section>
-                        )}
+                        <section className="bg-accent/5 rounded-lg p-4 border border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <h4 className="font-semibold text-foreground flex items-center gap-2">
+                                    <Compass className="w-4 h-4 text-accent" />
+                                    Guided Product Tour
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                    Restart the guided tour to walk through the main platform features.
+                                </p>
+                            </div>
+                            <Button 
+                                onClick={() => {
+                                    onOpenChange(false)
+                                    window.dispatchEvent(new CustomEvent('restart-tour'))
+                                }}
+                                className="bg-accent hover:bg-accent/90 text-accent-foreground shrink-0 font-medium"
+                            >
+                                Restart Tour
+                            </Button>
+                        </section>
 
                         {/* What the app does */}
                         <section>

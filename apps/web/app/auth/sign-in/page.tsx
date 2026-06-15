@@ -92,30 +92,25 @@ export default function SignInPage() {
 
         <CardContent>
           {/* Demo Access Banner */}
-          {process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-5 p-4 rounded-lg bg-accent/10 border border-accent/25 flex flex-col gap-3"
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-5 p-4 rounded-lg bg-accent/10 border border-accent/25 flex flex-col gap-3"
+          >
+            <div>
+              <p className="text-sm font-semibold text-accent">Want to try the platform first?</p>
+            </div>
+            <Button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isLoading}
+              className="w-full h-10 bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 font-semibold"
             >
-              <div>
-                <p className="text-sm font-semibold text-accent">👋 Want a quick look?</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Explore a fully pre-seeded workspace — no account needed.
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="w-full h-10 bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 font-semibold"
-              >
-                <Compass className="w-4 h-4" />
-                {demoLoading ? 'Preparing Demo Workspace...' : 'Explore Live Demo'}
-              </Button>
-            </motion.div>
-          )}
+              <Compass className="w-4 h-4" />
+              {demoLoading ? 'Preparing Demo Workspace...' : 'Launch Demo Workspace'}
+            </Button>
+          </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Alert */}

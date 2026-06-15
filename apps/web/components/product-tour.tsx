@@ -70,9 +70,6 @@ export function ProductTour() {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
 
   useEffect(() => {
-    // Check if tour is enabled and hasn't been completed
-    const isTourEnabled = process.env.NEXT_PUBLIC_ENABLE_PRODUCT_TOUR === 'true'
-    
     // Listen for custom event to restart tour
     const handleRestart = () => {
       setCurrentStep(0)
@@ -81,7 +78,7 @@ export function ProductTour() {
     
     window.addEventListener('restart-tour', handleRestart)
 
-    if (isAuthenticated && isTourEnabled) {
+    if (isAuthenticated) {
       const hasSeenTour = localStorage.getItem('hasSeenTour')
       if (!hasSeenTour) {
         // Small delay to let dashboard load
@@ -254,7 +251,7 @@ export function ProductTour() {
                 onClick={handleSkip}
                 className="text-xs"
               >
-                Skip Tour
+                Close All Explanations
               </Button>
               
               <div className="flex gap-2">

@@ -1,10 +1,29 @@
 'use client'
 
+import { useState } from 'react'
 import { motion, Variants } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles, Compass, UserPlus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import Link from 'next/link'
 
 export default function HeroSection() {
+  const router = useRouter()
+  const { demoLogin } = useAuth()
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false)
+
+  const handleDemoLogin = async () => {
+    setIsLoadingDemo(true)
+    try {
+      await demoLogin()
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Demo login failed', err)
+      setIsLoadingDemo(false)
+    }
+  }
+
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -68,25 +87,34 @@ export default function HeroSection() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <a href="/dashboard">
-                <Button className="h-12 px-8 text-base bg-primary text-primary-foreground hover:bg-primary/90">
-                  Start Building
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
+              <Button 
+                onClick={handleDemoLogin}
+                disabled={isLoadingDemo}
+                className="h-14 px-8 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 w-full sm:w-auto"
+              >
+                {isLoadingDemo ? (
+                  'Preparing Demo Workspace...'
+                ) : (
+                  <>
+                    <Compass className="w-5 h-5" />
+                    Explore Live Demo
+                  </>
+                )}
+              </Button>
             </motion.div>
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Button
-                variant="outline"
-                className="h-12 px-8 text-base border-border bg-transparent opacity-60 cursor-not-allowed"
-                disabled
-                title="Demo video unavailable"
-              >
-                Watch Demo
-              </Button>
+              <Link href="/auth/sign-up">
+                <Button
+                  variant="outline"
+                  className="h-14 px-8 text-lg font-medium border-border hover:bg-secondary/50 flex items-center gap-2 w-full sm:w-auto"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  Create Account
+                </Button>
+              </Link>
             </motion.div>
           </motion.div>
 

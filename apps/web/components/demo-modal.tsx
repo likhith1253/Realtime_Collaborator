@@ -16,11 +16,10 @@ export function DemoModal() {
   const { demoLogin, isAuthenticated } = useAuth()
 
   useEffect(() => {
-    // Only show if feature flag is enabled and user is not authenticated
-    const isDemoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true'
+    // Show to unauthenticated users who haven't seen the demo modal
     const hasSeenDemo = localStorage.getItem('hasSeenDemoModal')
     
-    if (isDemoEnabled && !isAuthenticated && !hasSeenDemo) {
+    if (!isAuthenticated && !hasSeenDemo) {
       // Small delay to let the page load first
       const timer = setTimeout(() => {
         setIsOpen(true)
@@ -111,7 +110,7 @@ export function DemoModal() {
                   className="w-full h-14 text-lg font-medium border-border/50 hover:bg-secondary/50 flex items-center justify-center gap-2"
                 >
                   <UserPlus className="w-5 h-5" />
-                  Create My Own Account
+                  Create Account
                 </Button>
               </CardContent>
               <CardFooter className="justify-center pb-6 text-sm text-muted-foreground">

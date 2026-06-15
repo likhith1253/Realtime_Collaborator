@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, Compass } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -150,6 +150,29 @@ function SignUpForm() {
         </CardHeader>
 
         <CardContent>
+          {/* Demo Access Banner */}
+          {!inviteInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-5 p-4 rounded-lg bg-accent/10 border border-accent/25 flex flex-col gap-3"
+            >
+              <div>
+                <p className="text-sm font-semibold text-accent">Want to try the platform first?</p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleDemoFallback}
+                disabled={isLoading}
+                className="w-full h-10 bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 font-semibold"
+              >
+                <Compass className="w-4 h-4" />
+                {loading ? 'Preparing Demo Workspace...' : 'Launch Demo Workspace'}
+              </Button>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Invite Info Banner */}
             {inviteInfo && (
@@ -167,22 +190,27 @@ function SignUpForm() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                className="flex flex-col gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20"
               >
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-destructive">{error}</p>
                 </div>
-                {process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && (
+                
+                <div className="pt-2 border-t border-destructive/20">
+                  <p className="text-sm font-medium text-foreground mb-3">
+                    Having trouble creating an account? You can still explore the platform immediately.
+                  </p>
                   <Button
                     type="button"
-                    variant="link"
-                    className="text-accent hover:text-accent/80 p-0 h-auto font-medium text-sm self-start flex items-center gap-1"
                     onClick={handleDemoFallback}
+                    disabled={isLoading}
+                    className="w-full h-10 bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 font-semibold"
                   >
-                    Explore Demo Workspace Instead &rarr;
+                    <Compass className="w-4 h-4" />
+                    {loading ? 'Preparing Demo Workspace...' : 'Launch Demo Workspace'}
                   </Button>
-                )}
+                </div>
               </motion.div>
             )}
 
