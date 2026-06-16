@@ -132,7 +132,7 @@ model Document {
   updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  project  Project           @relation(fields: [project_id], references: [id])
+  project  Project           @relation(fields: [project_id], references: [id], onDelete: Cascade)
   owner    User              @relation("DocumentOwner", fields: [owner_id], references: [id])
   versions DocumentVersion[]
 
@@ -203,7 +203,7 @@ model Presentation {
   updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   slides  Slide[]
 
   // Indexes
@@ -226,7 +226,7 @@ model Slide {
   updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  presentation Presentation @relation(fields: [presentation_id], references: [id])
+  presentation Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
 
   // Indexes
   @@index([presentation_id])
@@ -247,7 +247,7 @@ model Canvas {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   // Indexes
   @@index([project_id])
@@ -267,7 +267,7 @@ model TeamMember {
   joined_at  DateTime @default(now()) @db.Timestamptz
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [user_id], references: [id])
 
   // Indexes
@@ -294,7 +294,7 @@ model Invitation {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   // Indexes
   @@index([project_id])
@@ -315,7 +315,7 @@ model Message {
   created_at DateTime @default(now()) @db.Timestamptz
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   sender  User    @relation("MessageSender", fields: [sender_id], references: [id])
 
   // Indexes
