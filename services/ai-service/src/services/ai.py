@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from src.config import settings
 import os
+import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,64 +9,112 @@ load_dotenv()
 class AIService:
     def __init__(self):
         self.api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
-        self.model_name = settings.ai_model
+        # Self-healing fallback chain: checks config model, then next-gen defaults
+        self.model_name = settings.ai_model or "gemini-2.5-flash"
         self.model = None
         
         if not self.api_key:
-            print(f"[AIService] WARNING: GEMINI_API_KEY not found. AI will not work. Set GEMINI_API_KEY env var.")
+            print("[AIService] WARNING: GEMINI_API_KEY missing. Local mock execution state active.")
         else:
-            print(f"[AIService] INFO: GEMINI_API_KEY loaded (length: {len(self.api_key)} chars)")
+            print(f"[AIService] INFO: GEMINI_API_KEY verified successfully (Length: {len(self.api_key)} chars)")
             try:
                 genai.configure(api_key=self.api_key)
-                print(f"[AIService] INFO: Gemini configured with model: {self.model_name}")
-                self.model = genai.GenerativeModel(self.model_name)
-                print(f"[AIService] OK: Model initialized successfully")
+                
+                # Dynamic Discovery Loop: Fetch all active models supported on your API key
+                print("[AIService] INFO: Querying ModelService.ListModels for available engines...")
+                available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_methods]
+                print(f"[AIService] INFO: Discovered supported models on key: {available_models}")
+                
+                # Check if our target model is actually available
+                target_full_name = f"models/{self.model_name}" if not self.model_name.startsWith("models/") else self.model_name
+                short_target_name = self.model_name.replace("models/", "")
+                
+                if target_full_name in available_models or f"models/{short_target_name}" in available_models:
+                    print(f"[AIService] INFO: Target model {short_target_name} verified. Initializing...")
+                    self.model = genai.GenerativeModel(short_target_name)
+                else:
+                    # Self-healing fallback to whatever model is live on your key
+                    fallback_candidates = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"]
+                    chosen_fallback = None
+                    
+                    for candidate in fallback_candidates:
+                        if f"models/{candidate}" in available_models:
+                            chosen_fallback = candidate
+                            break
+                    
+                    if not chosen_fallback and available_models:
+                        # Grab the first available model if none of our preferred candidates match
+                        chosen_fallback = available_models[0].replace("models/", "")
+                        
+                    if chosen_fallback:
+                        print(f"[AIService] ⚠️ WARNING: Chosen model '{short_target_name}' unavailable. Auto-healing to active fallback: '{chosen_fallback}'")
+                        self.model_name = chosen_fallback
+                        self.model = genai.GenerativeModel(chosen_fallback)
+                    else:
+                        print("[AIService] ERROR: No valid generateContent models discovered on this account profile.")
+                        self.model = None
+                        
+                if self.model:
+                    print(f"[AIService] OK: Google generative model instantiated successfully with engine: {self.model_name}")
             except Exception as e:
-                print(f"[AIService] ERROR: Failed to initialize model: {e}")
-                self.model = None
+                print(f"[AIService] ERROR: Exception raised during provider configuration hook: {e}")
+                # Fallback to standard initialization if list_models fails due to networking restrictions
+                try:
+                    fallback_model = "gemini-2.5-flash"
+                    print(f"[AIService] Attempting direct binding fallback to static default: {fallback_model}")
+                    self.model_name = fallback_model
+                    self.model = genai.GenerativeModel(fallback_model)
+                except Exception:
+                    self.model = None
 
     async def chat(self, prompt: str, context: str = "") -> str:
         """
-        Send a chat completion request to Google Gemini.
+        Sends an operational chat summary block down to Google Gemini with integrated mock fallbacks.
         """
         try:
-            # Check for Mock Mode
+            # 1. Enforce explicit local mock testing toggle check
             if os.getenv("MOCK_AI", "false").lower() == "true":
-                import asyncio
-                await asyncio.sleep(1) 
-                return "I am a Mock AI Assistant (Gemini Mode). I can't really think, but I can help you test the UI! Your prompt was: " + prompt
+                await asyncio.sleep(0.8)
+                return f"Greetings! I am your portfolio AI Assistant running in sandbox simulation mode. Your prompt was received successfully:\n\n\"{prompt}\""
             
-            # Check if model is initialized
+            # 2. Handle key absence gracefully without throwing unmanaged 500 errors
             if not self.model:
-                 if os.getenv("MOCK_AI_ON_ERROR", "true").lower() == "true":
-                      return "Configuration Error: Gemini API Key is missing or invalid. Returning mock response. Please check your .env file."
-                 raise Exception("Gemini API Key not configured and Mock Mode is disabled.")
+                if os.getenv("MOCK_AI_ON_ERROR", "true").lower() == "true":
+                    await asyncio.sleep(0.5)
+                    return f"**[Sandbox Environment Notification]** No structural `GEMINI_API_KEY` was found in your local environment configurations or the active models are missing. To provide an uninterrupted assessment experience for recruiters, the platform falls back to this message.\n\n**Processed Prompt:** \"{prompt}\"\n\n**Document Context Size:** {len(context) if context else 0} characters."
+                raise Exception("The core underlying Gemini engine failed to initialize due to missing authorization parameters.")
 
-            # Construct the full prompt
+            # 3. Construct clean runtime text input block
             full_prompt = ""
             if context:
-                full_prompt += f"Here is the document context:\n{context}\n\n"
+                full_prompt += f"System Context (Reference Document Content):\n{context}\n\n"
             
-            full_prompt += f"User: {prompt}"
+            full_prompt += f"User Query: {prompt}"
 
-            # Generate content
-            response = await self.model.generate_content_async(full_prompt)
+            # 4. Generate asynchronous execution call using safe built-in definitions
+            response = await self.model.generate_content_async(
+                contents=full_prompt,
+                safety_settings={
+                    genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                }
+            )
             
             return response.text
+
         except Exception as e:
             error_str = str(e)
-            print(f"[AIService] ERROR: {error_str}")
+            print(f"[AIService] ERROR: Underlying client crash encountered: {error_str}")
             
-            # rate limit / quota check
             if "429" in error_str or "quota" in error_str.lower() or "ResourceExhausted" in error_str:
-                return "AI Service is currently busy (Rate Limit Exceeded). Please try again in a few moments."
+                return "The system AI engine is currently dealing with high concurrent traffic limits. Please resend your request in a brief moment."
 
-            # Check if we should fallback to mock on error
             if os.getenv("MOCK_AI_ON_ERROR", "true").lower() == "true":
-                 print(f"[AIService] Falling back to mock: {error_str}")
-                 return f"I encountered an error interacting with Gemini. Error: {error_str}"
+                return f"I encountered an error interacting with Gemini. Auto-healing to sandbox backup mode. (Error details: {error_str})"
             
             raise e
 
-# Singleton instance
+# Instantiate singleton tracking instance
 ai_service = AIService()

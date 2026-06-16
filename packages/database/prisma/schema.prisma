@@ -11,11 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
-
-
-
 // ============================================================================
 // TABLE: organizations
 // Owner: Document Service (Write), Auth Service (Read)
@@ -34,7 +29,7 @@ model Organization {
   members  OrganizationMember[]
 
   // Billing
-  stripe_customer_id String?  @db.Text
+  stripe_customer_id String? @db.Text
   subscription_status String @default("free") @db.Text
   subscription_plan   String @default("free") @db.Text
   current_period_end  DateTime? @db.Timestamptz
@@ -50,9 +45,9 @@ model Organization {
 model User {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email           String   @unique @db.Text
-  password_hash   String?  @db.Text
+  password_hash   String? @db.Text
   full_name       String   @db.Text
-  avatar_url      String?  @db.Text
+  avatar_url      String? @db.Text
   role            String   @default("viewer") @db.Text
   organization_id String   @db.Uuid
   created_at      DateTime @default(now()) @db.Timestamptz
@@ -97,7 +92,7 @@ model OrganizationMember {
 model Project {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String   @db.Text
-  description     String?  @db.Text
+  description     String? @db.Text
   organization_id String   @db.Uuid
   created_by      String   @db.Uuid
   owner_id        String   @db.Uuid
@@ -156,13 +151,13 @@ model DocumentVersion {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   document_id     String   @db.Uuid
   snapshot_binary Bytes
-  created_by      String?  @db.Uuid
-  name            String?  @db.Text
+  created_by      String? @db.Uuid
+  name            String? @db.Text
   created_at      DateTime @default(now()) @db.Timestamptz
 
   // Relations
   document Document @relation(fields: [document_id], references: [id])
-  creator  User?    @relation("VersionCreatedBy", fields: [created_by], references: [id])
+  creator  User? @relation("VersionCreatedBy", fields: [created_by], references: [id])
 
   // Indexes
   @@index([document_id])
@@ -179,9 +174,9 @@ model AccessLog {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id       String   @db.Uuid
   resource_type String   @db.Text
-  resource_id   String?  @db.Uuid
+  resource_id   String? @db.Uuid
   action        String   @db.Text
-  ip_address    String?  @db.Inet
+  ip_address    String? @db.Inet
   user_agent    String?  @db.Text
   created_at    DateTime @default(now()) @db.Timestamptz
 
@@ -203,7 +198,7 @@ model Presentation {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   project_id  String   @db.Uuid
   title       String   @db.Text
-  template    String?  @db.Text
+  template    String? @db.Text
   created_at  DateTime @default(now()) @db.Timestamptz
   updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
 
@@ -327,4 +322,22 @@ model Message {
   @@index([project_id])
   @@index([created_at])
   @@map("messages")
+}
+
+// ============================================================================
+// TABLE: pending_users
+// Owner: Auth Service
+// Description: Temporary storage for unverified email registrations.
+// ============================================================================
+model PendingUser {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String   @unique @db.Text
+  password_hash   String   @db.Text
+  full_name       String   @db.Text
+  token           String   @unique @db.Text
+  invite_token    String?  @db.Text
+  expires_at      DateTime @db.Timestamptz
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  @@map("pending_users")
 }

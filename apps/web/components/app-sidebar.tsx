@@ -41,6 +41,11 @@ interface ApiMember {
   }
 }
 
+interface Document {
+  id: string
+  [key: string]: unknown
+}
+
 export function Sidebar() {
   const router = useRouter()
   const { user, logout } = useAuth()
@@ -74,7 +79,7 @@ export function Sidebar() {
   React.useEffect(() => {
     async function loadDocCount() {
       try {
-        const docs = await ApiClient.get<any[]>('/documents')
+        const docs = await ApiClient.get<Document[]>('/documents')
         if (Array.isArray(docs)) {
           setDocCount(docs.length)
         }

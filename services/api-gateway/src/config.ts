@@ -27,19 +27,19 @@ export const config = {
     port: process.env.PORT || 8000,
     services: {
         auth: {
-            url: getRequiredUrl('AUTH_SERVICE_URL', 'http://127.0.0.1:3001'),
+            url: getRequiredUrl('AUTH_SERVICE_URL', 'http://localhost:3001'),
         },
         org: {
-            url: getRequiredUrl('ORG_SERVICE_URL', 'http://127.0.0.1:3004'),
+            url: getRequiredUrl('ORG_SERVICE_URL', 'http://localhost:3004'),
         },
         docs: {
-            url: getRequiredUrl('DOCS_SERVICE_URL', 'http://127.0.0.1:3002'),
+            url: getRequiredUrl('DOCS_SERVICE_URL', 'http://localhost:3002'),
         },
         collab: {
-            url: getRequiredUrl('COLLAB_SERVICE_URL', 'http://127.0.0.1:3003'),
+            url: getRequiredUrl('COLLAB_SERVICE_URL', 'http://localhost:3003'),
         },
         ai: {
-            url: getRequiredUrl('AI_SERVICE_URL', 'http://127.0.0.1:8001'),
+            url: getRequiredUrl('AI_SERVICE_URL', 'http://localhost:8001'),
         },
     },
     cors: {

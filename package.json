@@ -8,10 +8,11 @@
         "services/*"
     ],
     "scripts": {
-        "build": "npm run build --workspaces --if-present",
-        "test": "npm run test --workspaces --if-present",
-        "lint": "npm run lint --workspaces --if-present"
-    },
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+},
     "devDependencies": {
         "typescript": "^5.3.3"
     }

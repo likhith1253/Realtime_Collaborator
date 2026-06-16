@@ -16,24 +16,7 @@ const app = express();
 const logger = createLogger('api-gateway');
 
 // Trust proxy - Required for Render/Vercel to get correct client IP
-// This allows Express to trust the X-Forwarded-* headers set by Render's proxy
 app.set('trust proxy', true);
-
-// Connectivity Check Function
-const checkServiceHealth = async (name: string, url: string) => {
-    try {
-        logger.info(`Checking health of ${name} at ${url}/health...`);
-        const response = await fetch(`${url}/health`);
-        if (response.ok) {
-            logger.info(`✅ Connectivity Check: ${name} is UP (${response.status})`);
-        } else {
-            logger.warn(`⚠️ Connectivity Check: ${name} returned ${response.status}`);
-        }
-    } catch (error: any) {
-        logger.error(`❌ Connectivity Check: ${name} is DOWN. Error: ${error.message}`);
-    }
-};
-console.log('API Gateway: Logger created');
 
 // Pre-middleware to resolve Client IP and Request ID early
 app.use((req: any, res, next) => {
@@ -115,74 +98,7 @@ app.get('/live', (req, res) => {
     });
 });
 
-// Debug Network Endpoint - EXPOSE INTERNAL CONNECTIVITY STATE TO USER
-app.get('/debug-network', async (req, res) => {
-    const services = [
-        { key: 'auth', name: 'Auth Service', url: config.services.auth.url },
-        { key: 'org', name: 'Org Service', url: config.services.org.url },
-        { key: 'collab', name: 'Collab Service', url: config.services.collab.url },
-        { key: 'docs', name: 'Docs Service', url: config.services.docs.url },
-        { key: 'ai', name: 'AI Service', url: config.services.ai.url },
-    ];
-
-    const results: any = {
-        config: {
-            authUrl: config.services.auth.url,
-            orgUrl: config.services.org.url,
-            collabUrl: config.services.collab.url,
-            docsUrl: config.services.docs.url,
-            aiUrl: config.services.ai.url,
-        },
-        tests: {}
-    };
-
-    // Run connection tests sequentially with a stagger to avoid Render 429 DDoS protection
-    for (let i = 0; i < services.length; i++) {
-        const svc = services[i];
-
-        // Add a 1000ms delay between requests (except the first one) to bypass Render Rate Limit
-        if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        try {
-            const start = Date.now();
-            const healthUrl = `${svc.url}/health`;
-
-            // 3 second timeout using AbortController
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-            try {
-                const response = await fetch(healthUrl, { signal: controller.signal });
-                const duration = Date.now() - start;
-                results.tests[svc.key] = {
-                    name: svc.name,
-                    url: svc.url,
-                    status: response.ok ? 'UP' : 'WARN',
-                    httpStatus: response.status,
-                    durationMs: duration,
-                    statusText: response.statusText
-                };
-            } finally {
-                clearTimeout(timeoutId);
-            }
-        } catch (error: any) {
-            results.tests[svc.key] = {
-                name: svc.name,
-                url: svc.url,
-                status: 'DOWN',
-                error: error.name === 'AbortError' ? 'Timeout (3000ms)' : error.message,
-                code: error.cause?.code || error.code || 'UNKNOWN',
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            };
-        }
-    }
-
-    res.json(results);
-});
-
-// Helper for standard proxy config to avoid boilerplate and enforce tracing
+// Helper for standard proxy config
 const getProxyOptions = (targetUrl: string, serviceName: string, overrides: Partial<Options> = {}): Options => {
     return {
         target: targetUrl,
@@ -227,8 +143,12 @@ const getProxyOptions = (targetUrl: string, serviceName: string, overrides: Part
 // AI Service Proxy
 app.use('/ai', createProxyMiddleware(getProxyOptions(`${config.services.ai.url}/ai`, 'AI')) as unknown as express.RequestHandler);
 
-// Auth Service Proxy
-app.use('/auth', createProxyMiddleware(getProxyOptions(config.services.auth.url, 'Auth')) as unknown as express.RequestHandler);
+// Auth Service Proxy - FIXED: Strips out the leading '/auth' prefix so it maps to the Auth Service endpoints correctly
+app.use('/auth', createProxyMiddleware(getProxyOptions(config.services.auth.url, 'Auth', {
+    pathRewrite: {
+        '^/auth': '',
+    }
+})) as unknown as express.RequestHandler);
 
 // Org Service Proxy (also accepts legacy /organizations prefix)
 app.use('/organizations', createProxyMiddleware(getProxyOptions(config.services.org.url, 'Organizations', {
@@ -317,10 +237,15 @@ app.use('/socket.io', createProxyMiddleware(getProxyOptions(config.services.coll
     }
 })) as unknown as express.RequestHandler);
 
-// Global Error Handler
+// Global Error Handler - Forcibly converts any microservice crash text into a clean JSON data structure
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    logger.error(`Gateway Error: ${err.message}`);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error(`[API Gateway Exception Intercepted]: ${err.message}`);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ 
+        success: false,
+        error: 'Internal Server Error',
+        message: err.message || 'An unhandled exception block crashed an underlying microservice stream.'
+    });
 });
 
 // Start Server
@@ -333,5 +258,3 @@ app.listen(config.port, () => {
     logger.info(`Proxying /documents -> ${config.services.docs.url}`);
     logger.info('Startup health checks disabled to avoid Render 429 rate limits during redeploy. Use GET /debug-network for manual checks.');
 });
-
-

@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { AlertCircle, ArrowRight, CheckCircle2, Compass } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, Compass, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +17,7 @@ function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get('inviteToken')
-  const { register, demoLogin, loading: authLoading } = useAuth()
+  const { demoLogin, loading: authLoading } = useAuth()
 
   const [fullName, setFullName] = useState('')
   const [organizationName, setOrganizationName] = useState('')
@@ -28,8 +28,10 @@ function SignUpForm() {
   const [loading, setLoading] = useState(false)
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
   const [verifyingInvite, setVerifyingInvite] = useState(false)
+  
+  // NEW: State to show success message instead of crashing
+  const [verificationSent, setVerificationSent] = useState(false)
 
-  // Verify invite token if present
   useEffect(() => {
     async function verifyToken() {
       if (inviteToken) {
@@ -77,24 +79,38 @@ function SignUpForm() {
     }
 
     if (!isPasswordStrong) {
-      setError(
-        'Password must be at least 8 characters with uppercase and number'
-      )
+      setError('Password must be at least 8 characters with uppercase and number')
       return
     }
 
-    // Prevent duplicate submissions
-    if (loading || authLoading) {
-      console.log('[SignUpForm] Submission blocked - already loading')
-      return
-    }
+    if (loading || authLoading) return
 
     setLoading(true)
     try {
-      console.log('[SignUpForm] Starting registration submission')
-      await register(email, password, fullName, organizationName, inviteToken || undefined)
-      // Redirect to dashboard on success
-      router.push('/dashboard')
+      // Direct fetch bypasses the useAuth context crasher for the new Email Verification flow
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const res = await fetch(`${apiUrl}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName,
+          organization_name: organizationName,
+          inviteToken: inviteToken || undefined
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error?.message || data.error || 'Registration failed');
+      }
+
+      if (data.success) {
+        // Show the check email screen
+        setVerificationSent(true);
+      }
     } catch (err) {
       console.error('[SignUpForm] Registration error:', err)
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -117,6 +133,32 @@ function SignUpForm() {
   }
 
   const isLoading = loading || authLoading || verifyingInvite
+
+  // SUCCESS SCREEN: Shows after they submit the form
+  if (verificationSent) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+        <Card className="border-border/50 text-center py-8">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Mail className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
+            <CardDescription className="text-base mt-2">
+              We have sent a verification link to <strong>{email}</strong>. 
+              <br /><br />
+              <em>(Note for Developer: Check Terminal 2 logs for the local mock link!)</em>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full mt-4" onClick={() => router.push('/auth/sign-in')}>
+              Back to Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -150,7 +192,6 @@ function SignUpForm() {
         </CardHeader>
 
         <CardContent>
-          {/* Demo Access Banner */}
           {!inviteInfo && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
@@ -174,7 +215,6 @@ function SignUpForm() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Invite Info Banner */}
             {inviteInfo && (
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center gap-3 text-sm text-primary mb-4">
                 <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -185,7 +225,6 @@ function SignUpForm() {
               </div>
             )}
 
-            {/* Error Alert */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -214,11 +253,8 @@ function SignUpForm() {
               </motion.div>
             )}
 
-            {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-sm font-medium">
-                Full Name
-              </Label>
+              <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -230,11 +266,8 @@ function SignUpForm() {
               />
             </div>
 
-            {/* Organization */}
             <div className="space-y-2">
-              <Label htmlFor="organizationName" className="text-sm font-medium">
-                Organization Name
-              </Label>
+              <Label htmlFor="organizationName" className="text-sm font-medium">Organization Name</Label>
               <Input
                 id="organizationName"
                 type="text"
@@ -246,27 +279,21 @@ function SignUpForm() {
               />
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </Label>
+              <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading || !!inviteInfo} // Disable if invited
+                disabled={isLoading || !!inviteInfo}
                 className="h-11 bg-secondary border-border/50 text-base"
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password
-              </Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -276,49 +303,24 @@ function SignUpForm() {
                 disabled={isLoading}
                 className="h-11 bg-secondary border-border/50 text-base"
               />
-              {/* Password Strength Indicator */}
               <div className="space-y-2 mt-3">
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasLength
-                      ? 'bg-green-500'
-                      : 'bg-muted'
-                      }`}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    At least 8 characters
-                  </span>
+                  <div className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasLength ? 'bg-green-500' : 'bg-muted'}`} />
+                  <span className="text-xs text-muted-foreground">At least 8 characters</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasUppercase
-                      ? 'bg-green-500'
-                      : 'bg-muted'
-                      }`}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    One uppercase letter
-                  </span>
+                  <div className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasUppercase ? 'bg-green-500' : 'bg-muted'}`} />
+                  <span className="text-xs text-muted-foreground">One uppercase letter</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasNumber
-                      ? 'bg-green-500'
-                      : 'bg-muted'
-                      }`}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    One number
-                  </span>
+                  <div className={`w-2 h-2 rounded-full transition-colors ${passwordStrength.hasNumber ? 'bg-green-500' : 'bg-muted'}`} />
+                  <span className="text-xs text-muted-foreground">One number</span>
                 </div>
               </div>
             </div>
 
-            {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
-              </Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -330,7 +332,6 @@ function SignUpForm() {
               />
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               disabled={isLoading}
@@ -340,7 +341,6 @@ function SignUpForm() {
               {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
-            {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border/30" />
@@ -352,7 +352,6 @@ function SignUpForm() {
               </div>
             </div>
 
-            {/* Sign In Link */}
             <Button
               type="button"
               variant="outline"
@@ -363,16 +362,11 @@ function SignUpForm() {
             </Button>
           </form>
 
-          {/* Footer Text */}
           <p className="text-center text-xs text-muted-foreground mt-6">
             By creating an account, you agree to our{' '}
-            <Link href="/terms" className="text-accent hover:text-accent/80">
-              Terms of Service
-            </Link>
+            <Link href="/terms" className="text-accent hover:text-accent/80">Terms of Service</Link>
             {' '}and{' '}
-            <Link href="/privacy" className="text-accent hover:text-accent/80">
-              Privacy Policy
-            </Link>
+            <Link href="/privacy" className="text-accent hover:text-accent/80">Privacy Policy</Link>
           </p>
         </CardContent>
       </Card>

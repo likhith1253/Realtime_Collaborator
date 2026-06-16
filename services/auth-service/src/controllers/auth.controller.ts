@@ -10,20 +10,11 @@ const prisma = getPrismaClient();
 
 export class AuthController {
     async register(req: Request, res: Response) {
-        const requestId = (req as any).requestId || 'unknown';
-        const clientIp = (req as any).resolvedClientIp || req.ip || 'unknown';
-        const email = req.body?.email || 'no-email';
-        const rateLimitKey = (req as any).rateLimitKey || 'unknown';
-        const remainingRequests = (req as any).rateLimit ? (req as any).rateLimit.remaining : 'unknown';
-        
         try {
-            console.log(`[AuthController] Register attempt - RequestID: ${requestId}, ResolvedIP: ${clientIp}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}`);
             const validatedData = RegisterSchema.parse(req.body);
             const result = await authService.register(validatedData);
-            console.log(`[AuthController] Register success - RequestID: ${requestId}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}`);
             res.status(201).json(result);
         } catch (error: any) {
-            console.log(`[AuthController] Register failed - RequestID: ${requestId}, Email: ${email}, RateLimitKey: ${rateLimitKey}, RemainingRequests: ${remainingRequests}, Error: ${error.message}`);
             if (error.name === 'ZodError') {
                 res.status(400).json({ error: error.errors });
             } else {
@@ -32,9 +23,22 @@ export class AuthController {
         }
     }
 
+    async verifyEmail(req: Request, res: Response) {
+        try {
+            const { token } = req.body;
+            if (!token) {
+                res.status(400).json({ error: 'Token is required' });
+                return;
+            }
+            const result = await authService.verifyEmail(token);
+            res.status(200).json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async login(req: Request, res: Response) {
         try {
-            console.log('[DEBUG] Login Request Body:', JSON.stringify(req.body, null, 2));
             const validatedData = LoginSchema.parse(req.body);
             const result = await authService.login(validatedData);
             res.status(200).json(result);
@@ -72,7 +76,6 @@ export class AuthController {
 
     async getMe(req: Request, res: Response) {
         try {
-            // User is attached by auth middleware
             const user = (req as any).user;
             if (!user) {
                 res.status(401).json({ error: 'Not authenticated' });
@@ -96,11 +99,7 @@ export class AuthController {
                 avatar_url: dbUser.avatar_url,
                 organization_id: dbUser.organization_id,
                 organization: dbUser.organization
-                    ? {
-                        id: dbUser.organization.id,
-                        name: dbUser.organization.name,
-                        slug: dbUser.organization.slug
-                    }
+                    ? { id: dbUser.organization.id, name: dbUser.organization.name, slug: dbUser.organization.slug }
                     : null,
             });
         } catch (error: any) {
@@ -110,14 +109,12 @@ export class AuthController {
 
     async updateProfile(req: Request, res: Response) {
         try {
-            // User is attached by auth middleware
             const user = (req as any).user;
             if (!user) {
                 res.status(401).json({ error: 'Not authenticated' });
                 return;
             }
 
-            // Check if demo user
             const dbUserBefore = await prisma.user.findUnique({ where: { id: user.userId } });
             if (dbUserBefore?.email === 'demo@realtimecollaborator.com') {
                 res.status(403).json({ error: 'The profile of the Demo Account is protected and cannot be updated.' });
@@ -126,20 +123,14 @@ export class AuthController {
 
             const { full_name, avatar_url } = req.body;
 
-            // Validate that at least one field is provided
             if (!full_name && avatar_url === undefined) {
                 res.status(400).json({ error: 'No fields to update' });
                 return;
             }
 
-            // Build update data object
             const updateData: { full_name?: string; avatar_url?: string } = {};
-            if (full_name) {
-                updateData.full_name = full_name;
-            }
-            if (avatar_url !== undefined) {
-                updateData.avatar_url = avatar_url;
-            }
+            if (full_name) updateData.full_name = full_name;
+            if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
 
             const updatedUser = await prisma.user.update({
                 where: { id: user.userId },
@@ -155,11 +146,7 @@ export class AuthController {
                 avatar_url: updatedUser.avatar_url,
                 organization_id: updatedUser.organization_id,
                 organization: updatedUser.organization
-                    ? {
-                        id: updatedUser.organization.id,
-                        name: updatedUser.organization.name,
-                        slug: updatedUser.organization.slug
-                    }
+                    ? { id: updatedUser.organization.id, name: updatedUser.organization.name, slug: updatedUser.organization.slug }
                     : null,
             });
         } catch (error: any) {
@@ -167,4 +154,3 @@ export class AuthController {
         }
     }
 }
-
