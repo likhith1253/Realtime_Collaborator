@@ -44,14 +44,14 @@ export async function seedDemoWorkspace(prisma: any) {
         });
     }
 
-    // 3. Clear out old demo data pools to keep it fresh and prevent primary key collision errors
+    // 3. Clear out old demo data pools in exact foreign key dependency order
     await prisma.message.deleteMany({ where: { sender_id: user.id } });
-    await prisma.canvas.deleteMany({ where: { project: { owner_id: user.id } } });
+    await prisma.teamMember.deleteMany({ where: { user_id: user.id } });
     await prisma.slide.deleteMany({ where: { presentation: { project: { owner_id: user.id } } } });
     await prisma.presentation.deleteMany({ where: { project: { owner_id: user.id } } });
+    await prisma.canvas.deleteMany({ where: { project: { owner_id: user.id } } });
     await prisma.documentVersion.deleteMany({ where: { document: { owner_id: user.id } } });
     await prisma.document.deleteMany({ where: { owner_id: user.id } });
-    await prisma.teamMember.deleteMany({ where: { user_id: user.id } });
     await prisma.project.deleteMany({ where: { owner_id: user.id } });
 
     // 4. Create Flagship Portfolios / Workspaces
@@ -85,7 +85,6 @@ export async function seedDemoWorkspace(prisma: any) {
         }
     });
 
-    // Create a historical version snapshot for the recruiter to inspect
     await prisma.documentVersion.create({
         data: {
             document_id: activeDoc.id,
