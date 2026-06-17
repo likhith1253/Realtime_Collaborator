@@ -27,7 +27,7 @@ export function resolveClientIp(req: Request): string {
 
 export const registerRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 50, // INCREASED FROM 5 TO 50 TO PREVENT COLD-START RETRY EXHAUSTION
+    max: 5000, 
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
