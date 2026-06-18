@@ -29,7 +29,7 @@ export const errorHandler = (
     res: Response,
     next: NextFunction
 ) => {
-    logger.error('Error caught by middleware:', err);
+    logger.error('Error caught by middleware:', err.message);
 
     if (err instanceof AppError) {
         const response: ErrorResponse = {
@@ -71,3 +71,4 @@ export function asyncHandler(
         Promise.resolve(fn(req, res, next)).catch(next);
     };
 }
+

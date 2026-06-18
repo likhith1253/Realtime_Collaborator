@@ -239,7 +239,7 @@ app.use('/socket.io', createProxyMiddleware(getProxyOptions(config.services.coll
 
 // Global Error Handler - Forcibly converts any microservice crash text into a clean JSON data structure
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(`[API Gateway Exception Intercepted]: ${err.message}`);
+    logger.error(`[API Gateway Exception Intercepted]: ${err.message}`);
     res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ 
         success: false,
@@ -258,3 +258,7 @@ app.listen(config.port, () => {
     logger.info(`Proxying /documents -> ${config.services.docs.url}`);
     logger.info('Startup health checks disabled to avoid Render 429 rate limits during redeploy. Use GET /debug-network for manual checks.');
 });
+
+
+
+

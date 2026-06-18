@@ -43,8 +43,8 @@ app.use('/', orgRoutes);
 app.use('/billing', billingRoutes);
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    logger.error(err.stack);
-    res.status(500).json({ error: 'Internal Server Error' });
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
 });
 
 const startServer = async () => {
@@ -68,3 +68,5 @@ process.on('SIGTERM', async () => {
 });
 
 startServer();
+
+

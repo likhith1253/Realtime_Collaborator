@@ -57,7 +57,7 @@ export const registerRateLimiter = rateLimit({
 
 export const demoRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000,
-    max: 1000,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: () => 'demo-login-global',
@@ -76,7 +76,7 @@ export const demoRateLimiter = rateLimit({
 
 export const authRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
