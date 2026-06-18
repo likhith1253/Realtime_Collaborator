@@ -7,8 +7,8 @@ import { ChevronDown, Plus, FileText, Home, Presentation, Palette } from 'lucide
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-// Mock data - no assumptions about real data
-const mockProjects: Record<string, { name: string; documents: Array<{ id: string; title: string }> }> = {
+// Sample project data for demonstration
+const sampleProjects: Record<string, { name: string; documents: Array<{ id: string; title: string }> }> = {
   'project-1': {
     name: 'Marketing Campaign Q4',
     documents: [
@@ -42,7 +42,7 @@ export function Sidebar({ projectId }: { projectId?: string }) {
   const [isCreatingDoc, setIsCreatingDoc] = useState(false)
   const [newDocName, setNewDocName] = useState('')
 
-  const currentProject = currentProjectId ? mockProjects[currentProjectId] : null
+  const currentProject = currentProjectId ? sampleProjects[currentProjectId] : null
 
   const handleCreateDocument = () => {
     if (newDocName.trim() && currentProject) {
@@ -139,7 +139,7 @@ export function Sidebar({ projectId }: { projectId?: string }) {
         {isCreatingDoc ? (
           <div className="space-y-2">
             <Input
-              placeholder="Document name..."
+              placeholder="Document name"
               value={newDocName}
               onChange={(e) => setNewDocName(e.target.value)}
               onKeyDown={(e) => {

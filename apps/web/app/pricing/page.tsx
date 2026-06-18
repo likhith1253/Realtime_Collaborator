@@ -32,48 +32,48 @@ type PricingPlan = {
 
 const PLANS: PricingPlan[] = [
     {
-        name: 'Free',
-        description: 'Perfect for getting started',
+        name: 'Starter',
+        description: 'Essential collaboration features for individuals',
         price: {
             IN: '₹0',
             GLOBAL: '$0',
         },
         features: [
-            'Up to 3 documents',
-            'Basic collaboration',
-            '7-day version history',
-            'Community support',
+            'Up to 3 active documents',
+            'Real-time collaboration',
+            '7-day version retention',
+            'Standard support',
         ],
     },
     {
-        name: 'Pro',
-        description: 'For power users and creators',
+        name: 'Professional',
+        description: 'Advanced features for individual professionals',
         price: {
             IN: '₹499',
             GLOBAL: '$10',
         },
         features: [
             'Unlimited documents',
-            'Advanced collaboration',
-            '30-day version history',
-            'Priority email support',
-            'Export to PDF/Word',
+            'Advanced collaboration tools',
+            '30-day version retention',
+            'Priority support',
+            'Document export capabilities',
         ],
         popular: true,
     },
     {
-        name: 'Team',
-        description: 'Best for growing teams',
+        name: 'Enterprise',
+        description: 'Scalable solution for organizations',
         price: {
             IN: '₹999',
             GLOBAL: '$25',
         },
         features: [
-            'Everything in Pro',
-            'Team shared workspace',
-            'Admin controls',
-            'Audit logs',
-            'SSO Integration',
+            'All Professional features',
+            'Centralized team workspace',
+            'Administrative controls',
+            'Activity audit logs',
+            'Single sign-on (SSO)',
         ],
     },
 ]
@@ -137,10 +137,10 @@ export default function PricingPage() {
                     {/* Header */}
                     <div className="text-center space-y-4">
                         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                            Simple, Transparent Pricing
+                            Flexible Pricing Plans
                         </h1>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Choose the plan that's right for you. Change or cancel at any time.
+                            Select the plan that aligns with your team's requirements. Scale as needed.
                         </p>
                     </div>
 

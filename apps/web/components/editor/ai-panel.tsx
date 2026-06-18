@@ -182,7 +182,7 @@ export function AIPanel({ documentContent = '', onUpdateContent }: AIPanelProps)
       <div className="p-4 border-t border-border space-y-3 bg-muted/10">
         <div className="flex gap-2">
           <Input
-            placeholder="Ask AI..."
+            placeholder="Ask AI for assistance"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {

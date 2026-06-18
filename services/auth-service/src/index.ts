@@ -7,6 +7,7 @@ import { config } from './config';
 import { createLogger } from '@packages/logger';
 import { healthCheck } from './health';
 import authRoutes from './routes/auth.routes';
+import passwordResetRoutes from './routes/password-reset.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { getPrismaClient, disconnectPrisma, initializeDatabase, checkDatabaseHealth } from '@collab/database';
 import { seedDemoWorkspace } from './utils/demo-seeder';
@@ -48,6 +49,7 @@ app.get('/ready', async (req, res) => {
 
 app.get('/live', (req, res) => res.status(200).json({ status: 'live' }));
 app.use('/', authRoutes);
+app.use('/', passwordResetRoutes);
 app.use(errorHandler);
 
 const startServer = async () => {
@@ -92,3 +94,4 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
 startServer();
+

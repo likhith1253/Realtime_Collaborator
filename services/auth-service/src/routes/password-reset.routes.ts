@@ -1,0 +1,12 @@
+import { Router } from 'express';
+// @ts-ignore - Local module resolution
+import { PasswordResetController } from '../controllers/password-reset.controller';
+import { authRateLimiter } from '../middleware/rate-limit.middleware';
+
+const router = Router();
+const passwordResetController = new PasswordResetController();
+
+router.post('/request-reset', authRateLimiter, passwordResetController.requestPasswordReset);
+router.post('/reset', authRateLimiter, passwordResetController.resetPassword);
+
+export default router;

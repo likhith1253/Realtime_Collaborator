@@ -117,7 +117,7 @@ export default function ProjectDocumentsPage() {
         <div className="mb-6">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search documents..." className="pl-10" />
+            <Input placeholder="Search documents" className="pl-10" />
           </div>
         </div>
 
@@ -131,8 +131,8 @@ export default function ProjectDocumentsPage() {
             <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-            <p className="text-muted-foreground mb-6">Create your first document to get started</p>
+            <h3 className="text-lg font-semibold mb-2">No documents</h3>
+            <p className="text-muted-foreground mb-6">Create a document to begin collaborating</p>
             <Button onClick={handleCreateDocument} disabled={creating} variant="outline">
               Create Document
             </Button>

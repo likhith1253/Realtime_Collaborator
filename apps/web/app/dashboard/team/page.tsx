@@ -142,6 +142,15 @@ export default function TeamPage() {
                 </div>
             </div>
 
+            {/* Demo Banner for demo user */}
+            {user?.email === 'demo@realtimecollaborator.com' && (
+                <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        Note: You are viewing a simulated Demo Workspace. Team members displayed in the sidebar are mock profiles for demonstration purposes.
+                    </p>
+                </div>
+            )}
+
             <div className="border border-border rounded-xl bg-card overflow-hidden">
                 <table className="w-full">
                     <thead className="bg-secondary/50 border-b border-border">

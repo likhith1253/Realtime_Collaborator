@@ -72,13 +72,13 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
                             </p>
                         </section>
 
-                        {/* Demo video placeholder */}
+                        {/* Video Tutorial */}
                         <section className="bg-muted/50 rounded-lg p-4 border border-border">
                             <div className="flex items-center gap-3 text-muted-foreground">
                                 <Play className="w-8 h-8" />
                                 <div>
-                                    <p className="font-medium text-foreground">Demo Video</p>
-                                    <p className="text-sm">Demo video unavailable right now</p>
+                                    <p className="font-medium text-foreground">Video Tutorial</p>
+                                    <p className="text-sm">Product walkthrough coming soon</p>
                                 </div>
                             </div>
                         </section>

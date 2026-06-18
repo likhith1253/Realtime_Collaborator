@@ -67,7 +67,7 @@ export function DashboardContent() {
       setProjects(data)
     } catch (err) {
       console.error('Failed to fetch projects:', err)
-      setError('Failed to load projects')
+      setError('Unable to load projects. Please check your connection and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -97,7 +97,7 @@ export function DashboardContent() {
       }
     } catch (err) {
       console.error('Failed to create project:', err)
-      setError('Failed to create project')
+      setError('Unable to create project. Please try again.')
     } finally {
       setIsCreating(false)
     }

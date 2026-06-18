@@ -147,7 +147,7 @@ function SignUpForm() {
             <CardDescription className="text-base mt-2">
               We have sent a verification link to <strong>{email}</strong>. 
               <br /><br />
-              <em>(Note for Developer: Check Terminal 2 logs for the local mock link!)</em>
+              Please click the link to activate your account.
             </CardDescription>
           </CardHeader>
           <CardContent>

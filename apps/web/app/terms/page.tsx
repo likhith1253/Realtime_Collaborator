@@ -22,53 +22,59 @@ export default function TermsPage() {
 
                     <div className="space-y-4">
                         <h1 className="text-4xl font-bold">Terms of Service</h1>
-                        <p className="text-muted-foreground">Last updated: February 2026</p>
+                        <p className="text-muted-foreground">Last updated: June 2026</p>
                     </div>
 
                     <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
                         <section className="space-y-4">
                             <h2 className="text-2xl font-semibold">1. Acceptance of Terms</h2>
                             <p className="text-muted-foreground">
-                                By accessing and using Collab, you accept and agree to be bound by the terms
-                                and provision of this agreement. If you do not agree to abide by the above,
-                                please do not use this service.
+                                By accessing and using Collab, you agree to these Terms of Service and our Privacy Policy. 
+                                If you do not agree to these terms, please do not use our collaboration platform.
                             </p>
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-2xl font-semibold">2. Use License</h2>
+                            <h2 className="text-2xl font-semibold">2. Service Description</h2>
                             <p className="text-muted-foreground">
-                                Permission is granted to temporarily use Collab for personal, non-commercial
-                                transitory viewing only. This is the grant of a license, not a transfer of title,
-                                and under this license you may not modify or copy the materials, use the materials
-                                for any commercial purpose, or attempt to decompile or reverse engineer any software
-                                contained on Collab.
+                                Collab provides a real-time collaboration platform for document editing, project management, 
+                                and team communication. You are granted a limited, non-exclusive license to use the service 
+                                in accordance with these terms and your selected subscription plan.
                             </p>
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-2xl font-semibold">3. User Account</h2>
+                            <h2 className="text-2xl font-semibold">3. Account Responsibilities</h2>
                             <p className="text-muted-foreground">
-                                You are responsible for maintaining the confidentiality of your account and password
-                                and for restricting access to your computer. You agree to accept responsibility for
-                                all activities that occur under your account or password.
+                                You are responsible for maintaining the security of your account credentials and for all 
+                                activities that occur under your account. You must notify us immediately of any unauthorized 
+                                use of your account or any other breach of security.
                             </p>
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-2xl font-semibold">4. Disclaimer</h2>
+                            <h2 className="text-2xl font-semibold">4. Content and Data</h2>
                             <p className="text-muted-foreground">
-                                The materials on Collab are provided on an 'as is' basis. Collab makes no warranties,
-                                expressed or implied, and hereby disclaims and negates all other warranties including,
-                                without limitation, implied warranties or conditions of merchantability, fitness for a
-                                particular purpose, or non-infringement of intellectual property or other violation of rights.
+                                You retain ownership of all content you create or upload to Collab. We provide tools for 
+                                real-time collaboration and document management, but you are responsible for ensuring 
+                                your content complies with applicable laws and regulations.
                             </p>
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-2xl font-semibold">5. Contact Us</h2>
+                            <h2 className="text-2xl font-semibold">5. Service Availability</h2>
                             <p className="text-muted-foreground">
-                                If you have any questions about these Terms, please contact us at support@collab.com.
+                                We strive to maintain high service availability but do not guarantee uninterrupted access. 
+                                We may perform maintenance that temporarily affects service availability. We will provide 
+                                advance notice for scheduled maintenance when possible.
+                            </p>
+                        </section>
+
+                        <section className="space-y-4">
+                            <h2 className="text-2xl font-semibold">6. Contact Us</h2>
+                            <p className="text-muted-foreground">
+                                For questions about these Terms, please contact us through your account settings or 
+                                at support@collab.com.
                             </p>
                         </section>
                     </div>

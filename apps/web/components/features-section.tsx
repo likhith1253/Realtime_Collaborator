@@ -18,42 +18,42 @@ export default function FeaturesSection() {
     {
       icon: Building2,
       title: 'Organizations',
-      description: 'Manage multiple teams and projects under one unified workspace',
+      description: 'Centralized workspace management for multi-team environments',
     },
     {
       icon: FolderOpen,
       title: 'Projects',
-      description: 'Organize work into projects with customizable workflows',
+      description: 'Structured project organization with flexible workflow configurations',
     },
     {
       icon: FileText,
       title: 'Documents',
-      description: 'Create and edit documents with rich formatting and comments',
+      description: 'Rich document editing with real-time collaboration and commenting',
     },
     {
       icon: Users,
       title: 'Presence Indicators',
-      description: 'See who\'s online and working on documents in real-time',
+      description: 'Live user presence and activity tracking across all documents',
     },
     {
       icon: Zap,
       title: 'Real-time Sync',
-      description: 'Changes sync instantly across all team members seamlessly',
+      description: 'Instantaneous synchronization across all connected team members',
     },
     {
       icon: Brain,
       title: 'AI Assistance',
-      description: 'Get intelligent suggestions, summaries, and writing help',
+      description: 'Integrated AI for content generation, summarization, and optimization',
     },
     {
       icon: Lock,
       title: 'Security',
-      description: 'Enterprise-grade encryption and permission controls',
+      description: 'End-to-end encryption with granular access control policies',
     },
     {
       icon: BarChart3,
       title: 'Analytics',
-      description: 'Track usage, activity, and team productivity metrics',
+      description: 'Comprehensive insights into team productivity and document engagement',
     },
   ]
 
@@ -89,10 +89,10 @@ export default function FeaturesSection() {
           className="text-center mb-16 space-y-4"
         >
           <h2 className="text-4xl sm:text-5xl font-bold">
-            Everything You Need
+            Enterprise Collaboration Platform
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Comprehensive tools for collaborative work with built-in AI assistance
+            Purpose-built tools for modern teams with integrated AI capabilities
           </p>
         </motion.div>
 

@@ -51,7 +51,7 @@ export default function ProjectPage() {
 
       } catch (err) {
         console.error('Failed to fetch project data:', err);
-        setError('Failed to load project details');
+        setError('Unable to load project details. Please refresh the page.');
       } finally {
         setLoading(false);
       }
@@ -67,6 +67,7 @@ export default function ProjectPage() {
       router.push(`/documents/${newDoc.id}`);
     } catch (err) {
       console.error('Failed to create document:', err);
+      setError('Unable to create document. Please try again.');
     } finally {
       setCreating(false);
     }

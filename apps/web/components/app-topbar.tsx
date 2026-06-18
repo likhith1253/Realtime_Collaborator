@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Search,
   Bell,
@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/lib/auth-context'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ChatInterface } from './chat/chat-interface'
 import { AIAssistant } from './ai-assistant'
 
@@ -51,6 +53,7 @@ export function Topbar() {
   const [panelPosition, setPanelPosition] = React.useState({ top: 0, right: 0 })
   const { user, logout } = useAuth()
   const params = useParams()
+  const router = useRouter()
 
   const aiButtonRef = React.useRef<HTMLButtonElement>(null)
   const notificationButtonRef = React.useRef<HTMLButtonElement>(null)
@@ -58,6 +61,7 @@ export function Topbar() {
 
   const handleLogout = () => {
     logout()
+    router.push('/auth/sign-in')
   }
 
   const getUserInitials = (name: string) => {
@@ -115,7 +119,7 @@ export function Topbar() {
           >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search documents, projects..."
+              placeholder="Search documents and projects"
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
               className="pl-10 h-10 bg-secondary border-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
@@ -192,15 +196,21 @@ export function Topbar() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Profile</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Preferences</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/preferences">
+                    <span>Preferences</span>
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

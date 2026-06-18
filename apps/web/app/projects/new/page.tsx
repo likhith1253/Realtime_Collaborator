@@ -42,7 +42,7 @@ export default function NewProjectPage() {
       router.replace(`/projects/${newProject.id}`);
     } catch (err: unknown) {
       console.error('Failed to create project:', err);
-      const message = err instanceof Error ? err.message : 'Failed to create project';
+      const message = err instanceof Error ? err.message : 'Unable to create project. Please try again.';
       setError(message);
     } finally {
       setIsCreating(false);

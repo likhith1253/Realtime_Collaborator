@@ -147,13 +147,14 @@ export default function SignInPage() {
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
                 </Label>
-                <button
-                  type="button"
-                  onClick={() => setError('Password reset is not available yet. Please contact your administrator.')}
-                  className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors"
-                >
-                  Forgot password?
-                </button>
+                <Link href="/auth/forgot-password">
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </Link>
               </div>
               <Input
                 id="password"

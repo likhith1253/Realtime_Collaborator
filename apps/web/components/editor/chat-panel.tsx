@@ -142,7 +142,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type a message..."
+                        placeholder="Enter your message"
                         className="flex-1"
                     />
                     <Button size="icon" onClick={handleSendMessage} disabled={!inputValue.trim()}>

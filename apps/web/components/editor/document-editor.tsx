@@ -234,7 +234,7 @@ export function DocumentEditor({
               onFocus={() => setIsTitleFocused(true)}
               onBlur={() => setIsTitleFocused(false)}
               className="w-full bg-transparent text-4xl font-bold outline-none transition-colors"
-              placeholder="Document title..."
+              placeholder="Enter document title"
             />
             <div className="flex items-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">
@@ -258,7 +258,7 @@ export function DocumentEditor({
             <textarea
               value={content}
               onChange={handleContentChange}
-              placeholder="Start typing your document here..."
+              placeholder="Begin writing your document content"
               className="flex-1 px-8 py-6 bg-transparent text-base leading-relaxed resize-none outline-none overflow-y-auto"
               style={{
                 fontFamily: '"Monaco", "Menlo", "Ubuntu Mono", monospace',

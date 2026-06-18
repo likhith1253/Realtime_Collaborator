@@ -93,11 +93,11 @@ export default function HeroSection() {
                 className="h-14 px-8 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 w-full sm:w-auto"
               >
                 {isLoadingDemo ? (
-                  'Preparing Demo Workspace...'
+                  'Loading workspace...'
                 ) : (
                   <>
                     <Compass className="w-5 h-5" />
-                    Explore Live Demo
+                    Try Demo
                   </>
                 )}
               </Button>
@@ -124,9 +124,9 @@ export default function HeroSection() {
             className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12 border-t border-border"
           >
             {[
-              { number: '10k+', label: 'Teams Active' },
-              { number: '500M+', label: 'Documents Created' },
-              { number: '99.9%', label: 'Uptime' },
+              { number: 'Real-time', label: 'Collaboration' },
+              { number: 'AI-Powered', label: 'Assistance' },
+              { number: 'Enterprise', label: 'Security' },
             ].map((stat) => (
               <div key={stat.label} className="space-y-2">
                 <div className="text-3xl font-bold">{stat.number}</div>

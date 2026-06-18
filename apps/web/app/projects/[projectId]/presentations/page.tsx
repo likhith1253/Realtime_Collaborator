@@ -162,7 +162,7 @@ export default function ProjectPresentationsPage() {
                 <div className="mb-6">
                     <div className="relative max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input placeholder="Search presentations..." className="pl-10" />
+                        <Input placeholder="Search presentations" className="pl-10" />
                     </div>
                 </div>
 
