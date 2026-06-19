@@ -146,7 +146,7 @@ export default function TeamPage() {
             {user?.email === 'demo@realtimecollaborator.com' && (
                 <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                        Note: You are viewing a simulated Demo Workspace. Team members displayed in the sidebar are mock profiles for demonstration purposes.
+                        Notice: You are currently navigating a simulated Demo Workspace. Profiles displayed in the sidebar represent structural mock identities for demonstration purposes.
                     </p>
                 </div>
             )}

@@ -1,17 +1,12 @@
-console.log('API Gateway: Starting execution...');
-
 import express from 'express';
-console.log('API Gateway: Imports loaded (express)');
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { config } from './config';
-console.log('API Gateway: Config loaded');
 // @ts-ignore - Local module resolution
 import { createLogger } from '@packages/logger';
 
-console.log('API Gateway: Creating app...');
 const app = express();
 const logger = createLogger('api-gateway');
 

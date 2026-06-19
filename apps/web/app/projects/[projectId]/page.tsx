@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { FileText, Users, Calendar, ArrowRight, Plus, Presentation } from 'lucide-react';
+import { FileText, Users, Calendar, ArrowRight, Plus, Presentation, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ApiClient } from '@/lib/api-client';
-import { getProjectDocuments, createProjectDocument, type Document } from '@/lib/documents';
+import { getProjectDocuments, createProjectDocument } from '@/lib/documents';
 
 interface Project {
   id: string;
@@ -14,7 +16,7 @@ interface Project {
   description?: string;
   updated_at: string;
   created_at?: string;
-  members?: any[];
+  members?: Array<{ id: string; name: string; email: string }>;
 }
 
 export default function ProjectPage() {
@@ -34,6 +36,11 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,6 +80,29 @@ export default function ProjectPage() {
     }
   };
 
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+
+    setInviting(true);
+    setInviteError(null);
+    setInviteSuccess(null);
+
+    try {
+      await ApiClient.post(`/invites`, { projectId, email: inviteEmail });
+      setInviteSuccess(`Invitation sent to ${inviteEmail}`);
+      setInviteEmail('');
+      setTimeout(() => {
+        setIsInviteOpen(false);
+        setInviteSuccess(null);
+      }, 2000);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Failed to send invite');
+    } finally {
+      setInviting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -99,14 +129,20 @@ export default function ProjectPage() {
     <div className="flex-1 overflow-auto">
       <div className="p-8 max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
+        <div className="mb-8 flex w-full items-center justify-between gap-4">
+          <div className="flex-1">
             <h1 className="text-4xl font-bold mb-2">{project.name}</h1>
             <p className="text-lg text-muted-foreground">{project.description || 'No description provided'}</p>
           </div>
-          <Button variant="outline" asChild>
-            <Link href="/dashboard">Back</Link>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
+              <Users className="w-4 h-4 mr-2" />
+              Invite Member
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard">Back</Link>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -200,6 +236,49 @@ export default function ProjectPage() {
           </div>
         </div>
       </div>
+
+      {/* Invite Modal */}
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite to {project.name}</DialogTitle>
+            <DialogDescription>
+              Send an email invitation to add a new member to this project.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleInvite} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="colleague@example.com"
+                  className="pl-9"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  type="email"
+                />
+              </div>
+            </div>
+
+            {inviteError && (
+              <p className="text-sm text-destructive">{inviteError}</p>
+            )}
+            {inviteSuccess && (
+              <p className="text-sm text-green-600">{inviteSuccess}</p>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={inviting || !inviteEmail}>
+                {inviting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Send Invitation
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
